@@ -75,13 +75,12 @@ static void skip_whitespace() {
     for (;;) {
         char c = peek();
         switch(c) {
+            case '\n':
+                scanner.line++;
             case ' ':
             case '\r':
             case '\t':
                 advance();
-                break;
-            case '\n':
-                scanner.line++;
                 break;
             case '/':
                 if (peek_next() == '/') {
@@ -126,7 +125,6 @@ static tokentype_t identifier_type() {
     if (keyword_found != NULL)
         return keyword_found->tokentype;
 
-    printf("%d\n", TOKEN_IDENTIFIER);
     return TOKEN_IDENTIFIER;
 }
 

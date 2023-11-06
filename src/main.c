@@ -84,32 +84,11 @@ int main(int argc, const char **argv) {
 
     launch_interpreter();
 
-    printf("%s\n", argv[1]);
-    interpret(argv[1]);
-
-//     init_vm();
-//     chunk_t chunk;
-// 
-//     init_chunk(&chunk);
-// 
-// 
-//     write_constant(&chunk, 1.2, 123);
-//     write_constant(&chunk, 3.4, 123);
-// 
-//     write_chunk(&chunk, OP_ADD, 123);
-// 
-//     write_constant(&chunk, 5.6, 123);
-// 
-//     write_chunk(&chunk, OP_DIVIDE, 123);
-// 
-//     write_chunk(&chunk, OP_NEGATE, 123);
-//     write_chunk(&chunk, OP_RETURN, 123);
-// 
-//     disassemble_chunk(&chunk, "test chunk");
-//     // interpret(&chunk);
-//     free_vm();
-//     free_chunk(&chunk);
-// 
+    if (argc == 1) {
+        repl();
+    } else {
+        run_file(argv[1]);
+    }
 
     shutdown_interpreter();
     return 0;

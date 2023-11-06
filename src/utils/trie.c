@@ -123,6 +123,8 @@ trie_node_t* __trie_find(trie_t* trie, const char* str, int length) {
         if (u == NULL)
             return NULL;
     }
+    if (!u->is_end)
+        return NULL;
     return u;
 }
 

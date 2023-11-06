@@ -50,6 +50,9 @@ static void advance() {
 
     for (;;) {
         parser.current = scan_token();
+#ifdef DEBUG_TOKEN_SCANNED
+        printf("Current token %d\n", parser.current.type);
+#endif
         if (parser.current.type != TOKEN_ERROR) break;
 
         __CLOX_COMPILER_CURRENT_ERROR(parser.current.start);
@@ -231,10 +234,15 @@ static void statement() {
     if (match(TOKEN_PRINT)) {
         print_statement();
     }
+    if (match(TOKEN_SEMICOLON)) {}
 }
 
 static void declaration() {
-    statement();
+    if (match(TOKEN_VAR)) {
+        var_declaration();
+    } else {
+        statement();
+    }
 
     if (parser.panic_mode) synchronize();
 }
@@ -320,19 +328,5 @@ bool compile(const char* source, chunk_t* chunk) {
     }
 
     end_compiler();
-    // int line = -1;
-    // for (;;) {
-    //     token_t token = scan_token();
-    //     if (token.line != line) {
-    //         printf("%4d ", token.line);
-    //         line = token.line;
-    //     } else {
-    //         printf ("   | ");
-    //     }
-    //     printf("%2d '%.*s'\n", token.type, token.length, token.start);
-
-    //     if (token.type == TOKEN_EOF) break;
-    // }
-
     return !parser.had_error;
 }

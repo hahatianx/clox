@@ -108,7 +108,10 @@ static interpret_result_t run() {
                 push(NUMBER_VAL(-AS_NUMBER(pop())));
                 break;
             case OP_RETURN: {
-                print_value(pop());
+                /*
+                  Be cautious. pop() here may result in stack underflow
+                */
+                // print_value(pop());
                 printf("\n");
                 return INTERPRET_OK;
             }
