@@ -1,14 +1,14 @@
-#Clox implementation
+# Clox implementation
 
-###What's this?
+### What's this?
 Clox is a C implementation of lox interpreter following by the book by Robert Nystrom. 
 
 His website: https://craftinginterpreters.com/ 
 
-###What's new?
+### What's new?
 - Implemented a trie to recognize lox keywords.
 
-###Usage:
+### Usage:
 ```
 cmake CMakeLists.txt
 make
