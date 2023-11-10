@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <math.h>
 
 #include "common.h"
+#include "constant.h"
 
 #include "debug/debug.h"
 
 #include "value/value.h"
+#include "value/primitive/float.h"
+#include "value/primitive/integer.h"
 
 #include "vm/vm.h"
 #include "vm/compiler.h"
@@ -46,7 +50,7 @@ static void free_objects() {
 static interpret_result_t run() {
 #define READ_BYTE() (*vm.ip++)
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 16) | (READ_BYTE() << 8) | (READ_BYTE())])
+#define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 8) | (READ_BYTE())])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
 #define BINARY_OP(value_type, op) \
     do {  \
@@ -58,6 +62,73 @@ static interpret_result_t run() {
         double a = AS_NUMBER(pop()); \
         push(value_type(a op b));    \
     } while (0)
+#define ADD_OP \
+    do { \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            runtime_error("Operands must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        value_t b = pop(); \
+        value_t a = pop(); \
+        if (!IS_INT(a) || !IS_INT(b)) { \
+            push(__float_add(a, b)); \
+        } else { \
+            push(__integer_add(a, b)); \
+        } \
+    } while (0)
+#define SUB_OP \
+    do { \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            runtime_error("Operands must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        value_t b = pop(); \
+        value_t a = pop(); \
+        if (!IS_INT(a) || !IS_INT(b)) { \
+            push(__float_sub(a, b)); \
+        } else { \
+            push(__integer_sub(a, b)); \
+        } \
+    } while (0)
+#define MUL_OP \
+    do { \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            runtime_error("Operands must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        value_t b = pop(); \
+        value_t a = pop(); \
+        if (!IS_INT(a) || !IS_INT(b)) { \
+            push(__float_mul(a, b)); \
+        } else { \
+            push(__integer_mul(a, b)); \
+        } \
+    } while (0)
+#define DIV_OP \
+    do { \
+        if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
+            runtime_error("Operands must be numbers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        value_t b = pop(); \
+        value_t a = pop(); \
+        if (fabs(AS_NUMBER(b)) < __FLOAT_PRECISION) { \
+            runtime_error("Divisor cannot be zero."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        push(__float_div(a, b)); \
+    } while (0)
+#define INTEGER_BINARY_OP(op_method) \
+    do { \
+        if (!IS_INT(peek(0)) || !IS_INT(peek(1))) { \
+            runtime_error("Operands must be integers."); \
+            return INTERPRET_RUNTIME_ERROR; \
+        } \
+        value_t b = pop(); \
+        value_t a = pop(); \
+        push( op_method (a, b)); \
+    } while (0)
+
 
 
     for(;;) {
@@ -85,12 +156,18 @@ static interpret_result_t run() {
                 push(constant);
                 break;
             }
-            case OP_GREATER:    BINARY_OP(BOOL_VAL,   >); break;
-            case OP_LESS:       BINARY_OP(BOOL_VAL,   <); break;
-            case OP_ADD:        BINARY_OP(NUMBER_VAL, +); break;
-            case OP_SUBSTRACT:  BINARY_OP(NUMBER_VAL, -); break;
-            case OP_MULTIPLY:   BINARY_OP(NUMBER_VAL, *); break;
-            case OP_DIVIDE:     BINARY_OP(NUMBER_VAL, /); break;
+            case OP_GREATER:     BINARY_OP(BOOL_VAL,   >);           break;
+            case OP_LESS:        BINARY_OP(BOOL_VAL,   <);           break;
+            case OP_ADD:         ADD_OP;                             break;
+            case OP_SUBSTRACT:   SUB_OP;                             break;
+            case OP_MULTIPLY:    MUL_OP;                             break;
+            case OP_DIVIDE:      DIV_OP;                             break;
+            case OP_BIT_AND:     INTEGER_BINARY_OP(__integer_and);   break;
+            case OP_BIT_XOR:     INTEGER_BINARY_OP(__integer_xor);   break;
+            case OP_BIT_OR:      INTEGER_BINARY_OP(__integer_or);    break;
+            case OP_MOD:         INTEGER_BINARY_OP(__integer_mod);   break;
+            case OP_LEFT_SHIFT:  INTEGER_BINARY_OP(__integer_lsh);   break;
+            case OP_RIGHT_SHIFT: INTEGER_BINARY_OP(__integer_rsh);   break;
             case OP_EQUAL: {
                 value_t a = pop();
                 value_t b = pop();
@@ -105,7 +182,11 @@ static interpret_result_t run() {
                     runtime_error("Operand must be a number.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                push(NUMBER_VAL(-AS_NUMBER(pop())));
+                if (IS_INT(peek(0))) {
+                    push(INT_VAL(-AS_INT(pop())));
+                } else {
+                    push(FLOAT_VAL(-AS_FLOAT(pop())));
+                }
                 break;
             case OP_RETURN: {
                 /*
@@ -143,9 +224,16 @@ static interpret_result_t run() {
                 push(value);
                 break;
             }
+            default:
+                __CLOX_ERROR("The clox virtual does not support this bypte code operation.");
         }
     }
 
+#undef INTEGER_BINARY_OP
+#undef DIV_OP
+#undef MUL_OP
+#undef SUB_OP
+#undef ADD_OP
 #undef BINARY_OP
 #undef READ_STRING
 #undef READ_CONSTANT_LONG

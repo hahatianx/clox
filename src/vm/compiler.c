@@ -257,8 +257,13 @@ void grouping() {
 }
 
 void number() {
-    double value = strtod(parser.previous.start, NULL);
-    emit_constant(NUMBER_VAL(value));
+    value_t value;
+    if (parser.previous.type == TOKEN_INTEGER) {
+        value = INT_VAL(atoll(parser.previous.start));
+    } else if (parser.previous.type == TOKEN_NUMBER) {
+        value = FLOAT_VAL(strtod(parser.previous.start, NULL));
+    }
+    emit_constant((value));
 }
 
 void unary() {
@@ -280,17 +285,25 @@ void binary() {
     parse_precedence((precedence_t)(rule->precedence + 1));
 
     switch(operator_type) {
-        case TOKEN_BANG_EQUAL:    emit_byte_2(OP_EQUAL, OP_NOT); break;
-        case TOKEN_EQUAL_EQUAL:   emit_byte  (OP_EQUAL); break;
-        case TOKEN_GREATER:       emit_byte  (OP_GREATER); break;
-        case TOKEN_GREATER_EQUAL: emit_byte_2(OP_LESS, OP_NOT); break;
-        case TOKEN_LESS:          emit_byte  (OP_LESS); break;
+        case TOKEN_BANG_EQUAL:    emit_byte_2(OP_EQUAL, OP_NOT);   break;
+        case TOKEN_EQUAL_EQUAL:   emit_byte  (OP_EQUAL);           break;
+        case TOKEN_GREATER:       emit_byte  (OP_GREATER);         break;
+        case TOKEN_GREATER_EQUAL: emit_byte_2(OP_LESS, OP_NOT);    break;
+        case TOKEN_LESS:          emit_byte  (OP_LESS);            break;
         case TOKEN_LESS_EQUAL:    emit_byte_2(OP_GREATER, OP_NOT); break;
 
-        case TOKEN_PLUS:          emit_byte  (OP_ADD); break;
-        case TOKEN_MINUS:         emit_byte  (OP_SUBSTRACT); break;
-        case TOKEN_STAR:          emit_byte  (OP_MULTIPLY); break;
-        case TOKEN_SLASH:         emit_byte  (OP_DIVIDE); break;
+        case TOKEN_PLUS:          emit_byte  (OP_ADD);             break;
+        case TOKEN_MINUS:         emit_byte  (OP_SUBSTRACT);       break;
+        case TOKEN_STAR:          emit_byte  (OP_MULTIPLY);        break;
+        case TOKEN_SLASH:         emit_byte  (OP_DIVIDE);          break;
+        case TOKEN_PERCENT:       emit_byte  (OP_MOD);             break;
+
+        case TOKEN_AMPERSAND:     emit_byte  (OP_BIT_AND);         break;
+        case TOKEN_PIPE:          emit_byte  (OP_BIT_OR);          break;
+        case TOKEN_CAP:           emit_byte  (OP_BIT_XOR);         break;
+
+        case TOKEN_LEFT_SHIFT:    emit_byte  (OP_LEFT_SHIFT);      break;
+        case TOKEN_RIGHT_SHIFT:   emit_byte  (OP_RIGHT_SHIFT);     break;
         default: return;
     }
 }

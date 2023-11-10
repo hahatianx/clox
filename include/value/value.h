@@ -17,7 +17,8 @@ typedef struct clox_object {
 typedef enum {
     VAL_BOOL,
     VAL_NIL,
-    VAL_NUMBER,
+    VAL_INT,
+    VAL_FLOAT,
     VAL_OBJ,
 } value_type_t;
 
@@ -26,22 +27,28 @@ typedef struct {
     union {
         bool boolean;
         double number;
+        int64_t integer;
         object_t* obj;
     } as;
 } value_t;
 
+#define IS_INT(value)      ((value).type == VAL_INT)
 #define IS_BOOL(value)     ((value).type == VAL_BOOL)
 #define IS_NIL(value)      ((value).type == VAL_NIL)
-#define IS_NUMBER(value)   ((value).type == VAL_NUMBER)
+#define IS_FLOAT(value)    ((value).type == VAL_FLOAT)
 #define IS_OBJECT(value)   ((value).type == VAL_OBJ)
+#define IS_NUMBER(value)   ((value).type == VAL_FLOAT || (value).type == VAL_INT)
 
+#define AS_INT(value)      ((value).as.integer)
 #define AS_BOOL(value)     ((value).as.boolean)
-#define AS_NUMBER(value)   ((value).as.number)
+#define AS_FLOAT(value)    ((value).as.number)
 #define AS_OBJECT(value)   ((value).as.obj)
+#define AS_NUMBER(value)   ((IS_INT(value)) ? (double) (value).as.integer : (value).as.number)
 
 #define BOOL_VAL(value)    ((value_t) {VAL_BOOL, {.boolean = value}})
 #define NIL_VAL            ((value_t) {VAL_NIL,  {.number = 0}})
-#define NUMBER_VAL(value)  ((value_t) {VAL_NUMBER, {.number = value}})
+#define INT_VAL(value)     ((value_t) {VAL_INT,  {.integer = value}})
+#define FLOAT_VAL(value)   ((value_t) {VAL_FLOAT, {.number = value}})
 #define OBJECT_VAL(object) ((value_t) {VAL_OBJ, {.obj = (object_t*)object}})
 
 

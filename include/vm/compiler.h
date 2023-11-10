@@ -22,6 +22,7 @@ typedef enum {
     PREC_COMPARISON,
     PREC_TERM,
     PREC_FACTOR,
+    PREC_BITWISE,
     PREC_UNARY,
     PREC_CALL,
     PREC_PRIMARY

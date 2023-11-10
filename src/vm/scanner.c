@@ -95,13 +95,18 @@ static void skip_whitespace() {
 }
 
 static token_t parse_number() {
+    bool is_integer = true;
     while (is_digit(peek())) advance();
     if (peek() == '.' && is_digit(peek_next())) {
+        is_integer = false;
         advance();
         while (is_digit(peek())) advance();
     }
 
-    return make_token(TOKEN_NUMBER);
+    if (is_integer)
+        return make_token(TOKEN_INTEGER);
+    else
+        return make_token(TOKEN_NUMBER);
 }
 
 static token_t parse_string() {
@@ -189,8 +194,14 @@ token_t scan_token() {
         case '.': return make_token(TOKEN_DOT);
         case '-': return make_token(TOKEN_MINUS);
         case '+': return make_token(TOKEN_PLUS);
-        case '/': return make_token(TOKEN_SLASH);
         case '*': return make_token(TOKEN_STAR);
+        case '%': return make_token(TOKEN_PERCENT);
+        case '&': return make_token(TOKEN_AMPERSAND);
+        case '|': return make_token(TOKEN_PIPE);
+        case '^': return make_token(TOKEN_CAP);
+        case '/': 
+            return make_token(
+                match('#') ? TOKEN_FLOOR_DIVIDE : TOKEN_SLASH);
         case '!':
             return make_token(
                 match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
@@ -198,11 +209,21 @@ token_t scan_token() {
             return make_token(
                 match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
         case '<':
-            return make_token(
-                match('=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
+            if (match('=')) {
+                return make_token(TOKEN_LESS_EQUAL);
+            } else if (match('<')) {
+                return make_token(TOKEN_LEFT_SHIFT);
+            } else {
+                return make_token(TOKEN_LESS);
+            }
         case '>':
-            return make_token(
-                match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+            if (match('=')) {
+                return make_token(TOKEN_GREATER_EQUAL);
+            } else if (match('>')) {
+                return make_token(TOKEN_RIGHT_SHIFT);
+            } else {
+                return make_token(TOKEN_GREATER);
+            }
         case '"':
             return parse_string();
     }
