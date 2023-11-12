@@ -296,6 +296,7 @@ void binary() {
         case TOKEN_MINUS:         emit_byte  (OP_SUBSTRACT);       break;
         case TOKEN_STAR:          emit_byte  (OP_MULTIPLY);        break;
         case TOKEN_SLASH:         emit_byte  (OP_DIVIDE);          break;
+        case TOKEN_FLOOR_DIVIDE:  emit_byte  (OP_FLOOR_DIVIDE);    break;
         case TOKEN_PERCENT:       emit_byte  (OP_MOD);             break;
 
         case TOKEN_AMPERSAND:     emit_byte  (OP_BIT_AND);         break;

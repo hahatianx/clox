@@ -156,18 +156,19 @@ static interpret_result_t run() {
                 push(constant);
                 break;
             }
-            case OP_GREATER:     BINARY_OP(BOOL_VAL,   >);           break;
-            case OP_LESS:        BINARY_OP(BOOL_VAL,   <);           break;
-            case OP_ADD:         ADD_OP;                             break;
-            case OP_SUBSTRACT:   SUB_OP;                             break;
-            case OP_MULTIPLY:    MUL_OP;                             break;
-            case OP_DIVIDE:      DIV_OP;                             break;
-            case OP_BIT_AND:     INTEGER_BINARY_OP(__integer_and);   break;
-            case OP_BIT_XOR:     INTEGER_BINARY_OP(__integer_xor);   break;
-            case OP_BIT_OR:      INTEGER_BINARY_OP(__integer_or);    break;
-            case OP_MOD:         INTEGER_BINARY_OP(__integer_mod);   break;
-            case OP_LEFT_SHIFT:  INTEGER_BINARY_OP(__integer_lsh);   break;
-            case OP_RIGHT_SHIFT: INTEGER_BINARY_OP(__integer_rsh);   break;
+            case OP_GREATER:       BINARY_OP(BOOL_VAL,   >);           break;
+            case OP_LESS:          BINARY_OP(BOOL_VAL,   <);           break;
+            case OP_ADD:           ADD_OP;                             break;
+            case OP_SUBSTRACT:     SUB_OP;                             break;
+            case OP_MULTIPLY:      MUL_OP;                             break;
+            case OP_DIVIDE:        DIV_OP;                             break;
+            case OP_FLOOR_DIVIDE:  INTEGER_BINARY_OP(__integer_div);   break;
+            case OP_BIT_AND:       INTEGER_BINARY_OP(__integer_and);   break;
+            case OP_BIT_XOR:       INTEGER_BINARY_OP(__integer_xor);   break;
+            case OP_BIT_OR:        INTEGER_BINARY_OP(__integer_or);    break;
+            case OP_MOD:           INTEGER_BINARY_OP(__integer_mod);   break;
+            case OP_LEFT_SHIFT:    INTEGER_BINARY_OP(__integer_lsh);   break;
+            case OP_RIGHT_SHIFT:   INTEGER_BINARY_OP(__integer_rsh);   break;
             case OP_EQUAL: {
                 value_t a = pop();
                 value_t b = pop();
