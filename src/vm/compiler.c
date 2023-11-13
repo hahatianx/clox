@@ -146,17 +146,22 @@ static void end_compiler() {
 
 static void parse_precedence(precedence_t precedence) {
     advance();
+    bool can_assign = precedence <= PREC_ASSIGNMENT;
     parse_fn_t prefix_rule = get_rule(parser.previous.type)->prefix;
     if (prefix_rule == NULL) {
         __CLOX_COMPILER_PREVIOUS_ERROR("Expected expression.");
         return;
     }
-    prefix_rule();
+    prefix_rule(can_assign);
 
     while (precedence <= get_rule(parser.current.type)->precedence) {
         advance();
         parse_fn_t infix_rule = get_rule(parser.previous.type)->infix;
-        infix_rule();
+        infix_rule(can_assign);
+    }
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        error("Invalid assignment target.");
     }
 }
 
@@ -187,17 +192,31 @@ static void expression() {
     parse_precedence(PREC_ASSIGNMENT);
 }
 
-static void named_variable(token_t name) {
+static void named_variable(token_t name, bool can_assign) {
     uint16_t arg = identifier_constant(&name);
-    if (arg <= __OP_CONSTANT_MAX_INDEX) {
-        uint8_t lo = (arg     ) & __UINT8_MASK;
-        emit_byte_2(OP_GET_GLOBAL, lo);
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        if (arg <= __OP_CONSTANT_MAX_INDEX) {
+            uint8_t lo = (arg     ) & __UINT8_MASK;
+            emit_byte_2(OP_SET_GLOBAL, lo);
+        } else {
+            uint8_t hi = (arg >> 8) & __UINT8_MASK;
+            uint8_t lo = (arg     ) & __UINT8_MASK;
+            emit_byte(OP_SET_GLOBAL_LONG);
+            emit_byte(hi);
+            emit_byte(lo);
+        }
     } else {
-        uint8_t hi = (arg >> 8) & __UINT8_MASK;
-        uint8_t lo = (arg     ) & __UINT8_MASK;
-        emit_byte(OP_GET_GLOBAL_LONG);
-        emit_byte(hi);
-        emit_byte(lo);
+        if (arg <= __OP_CONSTANT_MAX_INDEX) {
+            uint8_t lo = (arg     ) & __UINT8_MASK;
+            emit_byte_2(OP_GET_GLOBAL, lo);
+        } else {
+            uint8_t hi = (arg >> 8) & __UINT8_MASK;
+            uint8_t lo = (arg     ) & __UINT8_MASK;
+            emit_byte(OP_GET_GLOBAL_LONG);
+            emit_byte(hi);
+            emit_byte(lo);
+        }
     }
 }
 
@@ -233,8 +252,11 @@ static void var_declaration() {
 static void statement() {
     if (match(TOKEN_PRINT)) {
         print_statement();
+    } else if (match(TOKEN_SEMICOLON)) {
+        ;
+    } else {
+        __CLOX_ERROR("Unsupported statement.");
     }
-    if (match(TOKEN_SEMICOLON)) {}
 }
 
 static void declaration() {
@@ -251,12 +273,12 @@ parse_rule_t* get_rule(tokentype_t tokentype) {
     return &rules[tokentype];
 }
 
-void grouping() {
+void grouping(bool can_assign) {
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-void number() {
+void number(bool can_assign) {
     value_t value;
     if (parser.previous.type == TOKEN_INTEGER) {
         value = INT_VAL(atoll(parser.previous.start));
@@ -266,7 +288,7 @@ void number() {
     emit_constant((value));
 }
 
-void unary() {
+void unary(bool can_assign) {
     tokentype_t operator_type = parser.previous.type;
     expression();
 
@@ -279,7 +301,7 @@ void unary() {
     }
 }
 
-void binary() {
+void binary(bool can_assign) {
     tokentype_t operator_type = parser.previous.type;
     parse_rule_t* rule = get_rule(operator_type);
     parse_precedence((precedence_t)(rule->precedence + 1));
@@ -309,7 +331,18 @@ void binary() {
     }
 }
 
-void literal() {
+void post_binary(bool can_assign) {
+    tokentype_t operator_type = parser.previous.type;
+    parse_rule_t* rule = get_rule(operator_type);
+    parse_precedence((precedence_t)(rule->precedence));
+
+    switch(operator_type) {
+        case TOKEN_EQUAL:         emit_byte(1);   break;
+        default: return;
+    }
+}
+
+void literal(bool can_assign) {
     tokentype_t token_type = parser.previous.type;
     switch(token_type) {
         case TOKEN_NIL:           emit_byte  (OP_NIL); break;
@@ -319,13 +352,13 @@ void literal() {
     }
 }
 
-void string(){
+void string(bool can_assign) {
     emit_constant(OBJECT_VAL(copy_string(parser.previous.start + 1,
                                 parser.previous.length - 2)));
 }
 
-void variable() {
-    named_variable(parser.previous);
+void variable(bool can_assign) {
+    named_variable(parser.previous, can_assign);
 }
 
 bool compile(const char* source, chunk_t* chunk) {

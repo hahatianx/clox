@@ -7,7 +7,7 @@
 
 #define __CLOX_ERROR(error) \
     do { \
-        fprintf(stderr, "Clox error: %s", error); \
+        fprintf(stderr, "Clox error: %s\n", error); \
         exit(1); \
     } while (0)
 

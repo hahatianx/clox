@@ -6,13 +6,14 @@
 #include "vm/scanner.h"
 #include "vm/compiler.h"
 
-void grouping();
-void number();
-void unary();
-void binary();
-void literal();
-void string();
-void variable();
+void grouping   (bool);
+void number     (bool);
+void unary      (bool);
+void binary     (bool);
+void literal    (bool);
+void string     (bool);
+void variable   (bool);
+void post_binary(bool);
 
 parse_rule_t rules[] = {
 

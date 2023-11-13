@@ -52,6 +52,7 @@ static interpret_result_t run() {
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 8) | (READ_BYTE())])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
+#define READ_STRING_LONG()  (AS_STRING(READ_CONSTANT_LONG()))
 #define BINARY_OP(value_type, op) \
     do {  \
         if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) { \
@@ -215,14 +216,48 @@ static interpret_result_t run() {
                 pop();
                 break;
             }
+            case OP_DEFINE_GLOBAL_LONG: {
+                object_string_t* name = READ_STRING_LONG();
+                table_set(&vm.globals, name, peek(0));
+                pop();
+                break;
+            }
             case OP_GET_GLOBAL: {
                 object_string_t* name = READ_STRING();
                 value_t value;
                 if (!table_get(&vm.globals, name, &value)) {
-                    runtime_error("Undefined variable '%s'.", name->chars);
+                    __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 push(value);
+                break;
+            }
+            case OP_GET_GLOBAL_LONG: {
+                object_string_t* name = READ_STRING_LONG();
+                value_t value;
+                if (!table_get(&vm.globals, name, &value)) {
+                    __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(value);
+                break;
+            }
+            case OP_SET_GLOBAL: {
+                object_string_t* name = READ_STRING();
+                if (table_set(&vm.globals, name, peek(0))) {
+                    table_delete(&vm.globals, name);
+                    __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OP_SET_GLOBAL_LONG: {
+                object_string_t* name = READ_STRING_LONG();
+                if (table_set(&vm.globals, name, peek(0))) {
+                    table_delete(&vm.globals, name);
+                    __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 break;
             }
             default:
@@ -236,6 +271,7 @@ static interpret_result_t run() {
 #undef SUB_OP
 #undef ADD_OP
 #undef BINARY_OP
+#undef READ_STRING_LONG
 #undef READ_STRING
 #undef READ_CONSTANT_LONG
 #undef READ_CONSTANT

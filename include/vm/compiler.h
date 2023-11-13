@@ -29,7 +29,7 @@ typedef enum {
 } precedence_t;
 
 
-typedef void (*parse_fn_t)();
+typedef void (*parse_fn_t)(bool);
 
 typedef struct {
     parse_fn_t prefix;

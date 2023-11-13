@@ -33,6 +33,8 @@ typedef enum {
     OP_DEFINE_GLOBAL_LONG,
     OP_GET_GLOBAL,
     OP_GET_GLOBAL_LONG,
+    OP_SET_GLOBAL,
+    OP_SET_GLOBAL_LONG,
     OP_PRINT,            // internal print, 1 byte
     OP_POP,              // pop the stack
 } op_code_t;
