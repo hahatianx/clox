@@ -8,11 +8,23 @@ static int simple_instruction(const char* name, int offset) {
     return offset + 1;
 }
 
+static int two_byte_instruction(const char* name, chunk_t* chunk, int offset) {
+    printf("%-16s ", name);
+    printf("%4d\n", chunk->code[offset + 1]);
+    return offset + 2;
+}
+
 static int constant_instruction(const char* name, chunk_t* chunk, int offset) {
     uint8_t constant = chunk->code[offset + 1];
     printf("%-16s %4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
+    return offset + 2;
+}
+
+static int byte_instruction(const char* name, chunk_t* chunk, int offset) {
+    uint8_t slot = chunk->code[offset + 1];
+    printf("%-16s %4d\n", name, slot);
     return offset + 2;
 }
 
@@ -81,6 +93,8 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return simple_instruction("OP_PRINT", offset);
         case OP_POP:
             return simple_instruction("OP_POP", offset);
+        case OP_POPN:
+            return two_byte_instruction("OP_POPN", chunk, offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("OP_DEFINE_GLOBAL", chunk, offset);
         case OP_GET_GLOBAL:
@@ -93,6 +107,10 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return constant_instruction_long("OP_GET_GLOBAL_LONG", chunk, offset);
         case OP_SET_GLOBAL_LONG:
             return constant_instruction_long("OP_SET_GLOBAL_LONG", chunk, offset);
+        case OP_GET_LOCAL:
+            return byte_instruction("OP_GET_LOCAL", chunk, offset);
+        case OP_SET_LOCAL:
+            return byte_instruction("OP_SET_LOCAL", chunk, offset);
         case OP_BIT_AND:
             return simple_instruction("OP_BIT_AND", offset);
         case OP_BIT_OR:
@@ -108,4 +126,16 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return offset + 1;
     }
 
+}
+
+void disassemble_locals(compiler_t* compiler, const char* name) {
+    printf("== %s ==\n", name);
+    for (int i = 0; i < compiler->local_count; ++i) {
+        disassemble_local_var(i, &compiler->locals[i]);
+    }
+}
+
+void disassemble_local_var(int slot, local_t* local) {
+    printf("slot: %d, depth: %d, name: %.*s\n",
+        slot, local->depth, local->name.length, local->name.start);
 }

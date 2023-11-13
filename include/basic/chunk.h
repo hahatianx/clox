@@ -35,8 +35,11 @@ typedef enum {
     OP_GET_GLOBAL_LONG,
     OP_SET_GLOBAL,
     OP_SET_GLOBAL_LONG,
+    OP_SET_LOCAL,
+    OP_GET_LOCAL,
     OP_PRINT,            // internal print, 1 byte
     OP_POP,              // pop the stack
+    OP_POPN,
 } op_code_t;
 
 typedef struct {

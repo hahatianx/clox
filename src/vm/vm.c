@@ -135,12 +135,13 @@ static interpret_result_t run() {
     for(;;) {
 
 #ifdef DEBUG_TRACE_EXECUTION
-    printf("                 ");
+    int printed = 0;
     for (value_t* slot = vm.stack; slot < vm.stack_top; slot++) {
         printf("[ ");
-        print_value(*slot);
+        printed += print_value(*slot) + 4;
         printf(" ]");
     }
+    for (int i = printed; i < 50; ++i) printf(" ");
     disassemble_instruction(vm.chunk,
         (int)(vm.ip - vm.chunk->code));
 #endif
@@ -210,6 +211,11 @@ static interpret_result_t run() {
                 pop();
                 break;
             }
+            case OP_POPN: {
+                uint8_t stacks_to_pop = READ_BYTE();
+                vm.stack_top -= stacks_to_pop;
+                break;
+            }
             case OP_DEFINE_GLOBAL: {
                 object_string_t* name = READ_STRING();
                 table_set(&vm.globals, name, peek(0));
@@ -258,6 +264,16 @@ static interpret_result_t run() {
                     __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
+                break;
+            }
+            case OP_GET_LOCAL: {
+                uint8_t slot = READ_BYTE();
+                push(vm.stack[slot]);
+                break;
+            }
+            case OP_SET_LOCAL: {
+                uint8_t slot = READ_BYTE();
+                vm.stack[slot] = peek(0);
                 break;
             }
             default:

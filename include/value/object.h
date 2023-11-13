@@ -40,7 +40,11 @@ static object_t* allocate_object(size_t size, object_type_t type) {
     (type*)allocate_object(sizeof(type), object_type)
 
 
+#ifdef DEBUG_PRINT_CODE
+int print_object(value_t value);
+#else
 void print_object(value_t value);
+#endif
 
 void free_object(object_t* obj);
 

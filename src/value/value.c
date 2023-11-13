@@ -29,6 +29,28 @@ void free_value_array(value_array_t* array) {
     init_value_array(array);
 }
 
+#ifdef DEBUG_TRACE_EXECUTION
+int print_value(value_t value) {
+    switch(value.type) {
+        case VAL_BOOL:
+            return printf(AS_BOOL(value) ? "true" : "false");
+            break;
+        case VAL_NIL:
+            return printf("nil");
+            break;
+        case VAL_FLOAT:
+            return printf("%g", AS_FLOAT(value));
+            break;
+        case VAL_INT:
+            return printf("%lld", AS_INT(value));
+            break;
+        case VAL_OBJ:
+            return print_object(value);
+            break;
+    }
+    return 0;
+}
+#else
 void print_value(value_t value) {
     switch(value.type) {
         case VAL_BOOL:
@@ -48,6 +70,7 @@ void print_value(value_t value) {
             break;
     }
 }
+#endif
 
 bool values_equal(value_t a, value_t b) {
     if (a.type != b.type) return false;

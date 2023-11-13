@@ -66,7 +66,11 @@ void init_value_array (value_array_t* array);
 void write_value_array(value_array_t* array, value_t value);
 void free_value_array (value_array_t* array);
 
-void print_value      (value_t value);
+#ifdef DEBUG_PRINT_CODE
+int print_value      (value_t value);
+#else
+void print_value     (value_t value);
+#endif
 
 
 #endif

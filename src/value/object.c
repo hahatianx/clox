@@ -8,6 +8,17 @@
 #include "value/object.h"
 #include "value/object/string.h"
 
+#ifdef DEBUG_TRACE_EXECUTION
+int print_object(value_t value) {
+    switch(OBJ_TYPE(value)) {
+        case OBJ_STRING:
+            return printf("%s", AS_CSTRING(value));
+            break;
+
+    }
+    return 0;
+}
+#else
 void print_object(value_t value) {
     switch(OBJ_TYPE(value)) {
         case OBJ_STRING:
@@ -16,6 +27,8 @@ void print_object(value_t value) {
 
     }
 }
+#endif
+
 
 void free_objects(object_t *obj) {
     switch (obj->type) {
