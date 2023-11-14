@@ -97,16 +97,24 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return two_byte_instruction("OP_POPN", chunk, offset);
         case OP_DEFINE_GLOBAL:
             return constant_instruction("OP_DEFINE_GLOBAL", chunk, offset);
+        case OP_DEFINE_MUT_GLOBAL:
+            return constant_instruction("OP_DEFINE_MUT_GLOBAL", chunk, offset);
         case OP_GET_GLOBAL:
             return constant_instruction("OP_GET_GLOBAL", chunk, offset);
         case OP_SET_GLOBAL:
             return constant_instruction("OP_SET_GLOBAL", chunk, offset);
         case OP_DEFINE_GLOBAL_LONG:
             return constant_instruction_long("OP_DEFINE_GLOBAL_LONG", chunk, offset);
+        case OP_DEFINE_MUT_GLOBAL_LONG:
+            return constant_instruction("OP_DEFINE_MUT_GLOBAL_LONG", chunk, offset);
         case OP_GET_GLOBAL_LONG:
             return constant_instruction_long("OP_GET_GLOBAL_LONG", chunk, offset);
         case OP_SET_GLOBAL_LONG:
             return constant_instruction_long("OP_SET_GLOBAL_LONG", chunk, offset);
+        case OP_DEFINE_LOCAL:
+            return simple_instruction("OP_DEFINE_LOCAL", offset);
+        case OP_DEFINE_MUT_LOCAL:
+            return simple_instruction("OP_DEFINE_MUT_LOCAL", offset);
         case OP_GET_LOCAL:
             return byte_instruction("OP_GET_LOCAL", chunk, offset);
         case OP_SET_LOCAL:

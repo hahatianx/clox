@@ -1,6 +1,5 @@
 
 #include "value/value.h"
-#include "value/primitive/float.h"
 #include "value/primitive/integer.h"
 
 #define V int64_t

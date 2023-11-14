@@ -10,9 +10,14 @@
 #define STACK_MAX 256
 
 typedef struct {
+    bool mutable;
+} var_metadata_t;
+
+typedef struct {
     chunk_t* chunk;
     uint8_t* ip;
     value_t stack[STACK_MAX];
+    var_metadata_t local[STACK_MAX];
     value_t* stack_top;
     table_t strings;
     table_t globals;

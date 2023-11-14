@@ -15,7 +15,7 @@ static table_entry_t* find_entry(table_entry_t* entries, int capacity, object_st
     for (;;) {
         table_entry_t* entry = &entries[index];
         if (entry->key == NULL) {
-            if (IS_NIL(entry->value)) {
+            if (IS_ENTRY_NULL(entry->value)) {
                 return tombstone != NULL ? tombstone : entry;
             } else {
                 if (tombstone == NULL) tombstone = entry;
@@ -31,7 +31,7 @@ static void adjust_capacity(table_t* table, int capacity) {
     table_entry_t* entries = ALLOCATE(table_entry_t, capacity);
     for (int i = 0; i < capacity; i ++) {
         entries[i].key = NULL;
-        entries[i].value = NIL_VAL;
+        entries[i].value = NULL;
     }
 
     table->count = 0;
@@ -56,12 +56,16 @@ void init_table(table_t *table) {
     table->entries = NULL;
 }
 
+/*
+    Be cautious about value memory leak!
+    DO NOT CALL IT DIRECTLY
+*/
 void free_table(table_t *table) {
     FREE_ARRAY(table_entry_t, table->entries, table->capacity);
     init_table(table);
 }
 
-bool table_set(table_t* table, object_string_t* key, value_t value) {
+bool table_set(table_t* table, object_string_t* key, void* value) {
     if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
         int capacity = GROW_CAPACITY(table->capacity);
         adjust_capacity(table, capacity);
@@ -69,7 +73,7 @@ bool table_set(table_t* table, object_string_t* key, value_t value) {
 
     table_entry_t* entry = find_entry(table->entries, table->capacity, key);
     bool is_new_key = entry->key == NULL;
-    if (is_new_key && IS_NIL(entry->value)) table->count ++;
+    if (is_new_key && IS_ENTRY_NULL(entry->value)) table->count ++;
 
     entry->key = key;
     entry->value = value;
@@ -85,7 +89,7 @@ void table_add_all(table_t* from, table_t* to) {
     }
 }
 
-bool table_get(table_t* table, object_string_t* key, value_t* value) {
+bool table_get(table_t* table, object_string_t* key, void** value) {
     if (table->count == 0) return false;
 
     table_entry_t* entry = find_entry(table->entries, table->capacity, key);
@@ -96,14 +100,16 @@ bool table_get(table_t* table, object_string_t* key, value_t* value) {
     return true;
 }
 
-bool table_delete(table_t* table, object_string_t* key) {
+bool table_delete(table_t* table, object_string_t* key, void** value) {
     if (table->count == 0) return false;
 
     table_entry_t* entry = find_entry(table->entries, table->capacity, key);
     if (entry->key == NULL) return false;
 
+    *value = entry->value;
+
     entry->key = NULL;
-    entry->value = BOOL_VAL(true);
+    entry->value = TOME;
     return true;
 }
 
@@ -114,7 +120,7 @@ object_string_t* table_find_string(table_t* table, const char* chars, int length
     while (true) {
         table_entry_t* entry = &table->entries[index];
         if (entry->key == NULL) {
-            if (IS_NIL(entry->value))
+            if (IS_ENTRY_NULL(entry->value))
                 return NULL;
         } else if (entry->key->length == length && 
                     entry->key->hash == hash &&

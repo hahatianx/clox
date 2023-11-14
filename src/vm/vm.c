@@ -7,6 +7,9 @@
 
 #include "debug/debug.h"
 
+#include "component/vartable.h"
+#include "component/valuetable.h"
+
 #include "value/value.h"
 #include "value/primitive/float.h"
 #include "value/primitive/integer.h"
@@ -218,52 +221,88 @@ static interpret_result_t run() {
             }
             case OP_DEFINE_GLOBAL: {
                 object_string_t* name = READ_STRING();
-                table_set(&vm.globals, name, peek(0));
+                table_set_var(&vm.globals, name, (var_t) {false, peek(0)});
                 pop();
                 break;
             }
             case OP_DEFINE_GLOBAL_LONG: {
                 object_string_t* name = READ_STRING_LONG();
-                table_set(&vm.globals, name, peek(0));
+                table_set_var(&vm.globals, name, (var_t) {false, peek(0)});
+                pop();
+                break;
+            }
+            case OP_DEFINE_MUT_GLOBAL: {
+                object_string_t* name = READ_STRING();
+                table_set_var(&vm.globals, name, (var_t) {true , peek(0)});
+                pop();
+                break;
+            }
+            case OP_DEFINE_MUT_GLOBAL_LONG: {
+                object_string_t* name = READ_STRING_LONG();
+                table_set_var(&vm.globals, name, (var_t) {true , peek(0)});
                 pop();
                 break;
             }
             case OP_GET_GLOBAL: {
                 object_string_t* name = READ_STRING();
-                value_t value;
-                if (!table_get(&vm.globals, name, &value)) {
+                var_t var;
+                if (!table_get_var(&vm.globals, name, &var)) {
                     __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                push(value);
+                push(var.v);
                 break;
             }
             case OP_GET_GLOBAL_LONG: {
                 object_string_t* name = READ_STRING_LONG();
-                value_t value;
-                if (!table_get(&vm.globals, name, &value)) {
+                var_t var;
+                if (!table_get_var(&vm.globals, name, &var)) {
                     __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                push(value);
+                push(var.v);
                 break;
             }
             case OP_SET_GLOBAL: {
                 object_string_t* name = READ_STRING();
-                if (table_set(&vm.globals, name, peek(0))) {
-                    table_delete(&vm.globals, name);
+                var_t var;
+                if (!table_get_var(&vm.globals, name, &var)) {
                     __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
+                } else {
+                    if (var.mutable) {
+                        table_set_var(&vm.globals, name, (var_t) {true, peek(0)});
+                    } else {
+                        __CLOX_RUNTIME_ERROR("Cannot assign new values to immutable variable '%s'.", name->chars);
+                        return INTERPRET_RUNTIME_ERROR;
+                    }
                 }
                 break;
             }
             case OP_SET_GLOBAL_LONG: {
                 object_string_t* name = READ_STRING_LONG();
-                if (table_set(&vm.globals, name, peek(0))) {
-                    table_delete(&vm.globals, name);
+                var_t var;
+                if (!table_get_var(&vm.globals, name, &var)) {
                     __CLOX_RUNTIME_ERROR("Undefined variable '%s'.", name->chars);
                     return INTERPRET_RUNTIME_ERROR;
+                } else {
+                    if (var.mutable) {
+                        table_set_var(&vm.globals, name, (var_t) {true, peek(0)});
+                    } else {
+                        __CLOX_RUNTIME_ERROR("Cannot assign new values to immutable variable '%s'.", name->chars);
+                        return INTERPRET_RUNTIME_ERROR;
+                    }
                 }
+                break;
+            }
+            case OP_DEFINE_LOCAL: {
+                uint8_t arg = ((void*)vm.stack_top - (void*)vm.stack) / sizeof(value_t) - 1;
+                vm.local[arg].mutable = false;
+                break;
+            }
+            case OP_DEFINE_MUT_LOCAL: {
+                uint8_t arg = ((void*)vm.stack_top - (void*)vm.stack) / sizeof(value_t) - 1;
+                vm.local[arg].mutable = true;
                 break;
             }
             case OP_GET_LOCAL: {
@@ -273,6 +312,10 @@ static interpret_result_t run() {
             }
             case OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
+                if (!vm.local[slot].mutable) {
+                    __CLOX_RUNTIME_ERROR("Cannot assign new values to immutable variable.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
                 vm.stack[slot] = peek(0);
                 break;
             }
@@ -304,7 +347,7 @@ void init_vm() {
 
 void free_vm() {
     free_table(&vm.strings);
-    free_table(&vm.globals);
+    free_table_var(&vm.globals);
     free_objects();
 }
 

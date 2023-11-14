@@ -6,12 +6,11 @@
 #include "constant.h"
 #include "error/error.h"
 
-#include "value/value.h"
-
 #include "vm/compiler.h"
 #include "vm/scanner.h"
 #include "vm/parserules.h"
 
+#include "value/value.h"
 #include "value/object/string.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -125,7 +124,7 @@ static void emit_byte_2(uint8_t byte, uint8_t byte2) {
 static void emit_constant(value_t value) {
     int result = write_constant(current_chunk(), value, parser.previous.line);
     if (result) {
-        __CLOX_COMPILER_PREVIOUS_ERROR("Too many constants in a chunk. The interpreter can only support at most 65535 constants in a chunk.");
+        __CLOX_COMPILER_PREVIOUS_ERROR("too many constants in a chunk. The interpreter can only support at most 65535 constants in a chunk.");
     }
 }
 
@@ -184,19 +183,20 @@ static void mark_variable_inited() {
 #endif
 }
 
-static void define_variable(uint16_t global) {
+static void define_variable(uint16_t global, bool mutable) {
     if (current->scope_depth) {
         mark_variable_inited();
+        emit_byte(mutable ? OP_DEFINE_MUT_LOCAL : OP_DEFINE_LOCAL);
         return;
     }
     if (global > __OP_CONSTANT_LONG_MAX_INDEX) {
-        __CLOX_COMPILER_PREVIOUS_ERROR("Too many constants in a chunk. The interpreter can only support at most 65535 constants in a chunk.");
+        __CLOX_COMPILER_PREVIOUS_ERROR("too many constants in a chunk. The interpreter can only support at most 65535 constants in a chunk.");
     } else if (global <= __OP_CONSTANT_MAX_INDEX ) {
-        emit_byte_2(OP_DEFINE_GLOBAL, global);
+        emit_byte_2(mutable ?  OP_DEFINE_MUT_GLOBAL : OP_DEFINE_GLOBAL, global);
     } else {
         uint8_t hi = (global >> 8) & __UINT8_MASK;
         uint8_t lo = (global     ) & __UINT8_MASK;
-        emit_byte(OP_DEFINE_GLOBAL_LONG);
+        emit_byte(mutable ? OP_DEFINE_MUT_GLOBAL_LONG : OP_DEFINE_GLOBAL_LONG);
         emit_byte(hi);
         emit_byte(lo);
     }
@@ -216,7 +216,7 @@ static int resolve_local(compiler_t* compiler, token_t* name) {
         local_t* local = &compiler->locals[i];
         if (identifier_equal(name, &local->name)) {
             if (local->depth == -1) {
-                __CLOX_COMPILER_PREVIOUS_ERROR("Can't read local variable in its own initializer.");
+                __CLOX_COMPILER_PREVIOUS_ERROR("can't read local variable in its own initializer.");
             }
             return i;
         }
@@ -243,7 +243,7 @@ static void declare_variable() {
         }
 
         if (identifier_equal(name, &local->name)) {
-            __CLOX_COMPILER_PREVIOUS_ERROR("Already a variable with this name in this scope.");
+            __CLOX_COMPILER_PREVIOUS_ERROR("already a variable with this name in this scope.");
         }
     } 
     add_local(*name);
@@ -317,16 +317,23 @@ static void expression_statement() {
 /******************** STATEMENTS   ENDS *********************/
 
 static void var_declaration() {
+    bool mutable = false;
+    if (match(TOKEN_MUT)) {
+        mutable = true;
+    }
+
     uint16_t global = parse_variable("Expect variable name.");
 
     if (match(TOKEN_EQUAL)) {
         expression();
+    } else if (!mutable) {
+        __CLOX_COMPILER_PREVIOUS_ERROR("immutable variables must be initialized.");
     } else {
         emit_byte(OP_NIL);
     }
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
 
-    define_variable(global);
+    define_variable(global, mutable);
 }
 
 static void begin_scope() {
@@ -442,16 +449,16 @@ void binary(bool can_assign) {
     }
 }
 
-void post_binary(bool can_assign) {
-    tokentype_t operator_type = parser.previous.type;
-    parse_rule_t* rule = get_rule(operator_type);
-    parse_precedence((precedence_t)(rule->precedence));
+// void post_binary(bool can_assign) {
+//     tokentype_t operator_type = parser.previous.type;
+//     parse_rule_t* rule = get_rule(operator_type);
+//     parse_precedence((precedence_t)(rule->precedence));
 
-    switch(operator_type) {
-        case TOKEN_EQUAL:         emit_byte(1);   break;
-        default: return;
-    }
-}
+//     switch(operator_type) {
+//         case TOKEN_EQUAL:         emit_byte(1);   break;
+//         default: return;
+//     }
+// }
 
 void literal(bool can_assign) {
     tokentype_t token_type = parser.previous.type;

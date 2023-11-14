@@ -10,6 +10,8 @@
 #include "value/object.h"
 #include "value/object/string.h"
 
+#include "component/valuetable.h"
+
 static uint32_t hash_string(const char* key, int length) {
     uint32_t hash = 216613626u;
     for (int i = 0; i < length; i ++) {
@@ -24,7 +26,7 @@ static object_string_t* allocate_string(char* chars, int length, uint32_t hash) 
     string->chars = chars;
     string->length = length;
     string->hash = hash;
-    table_set(&vm.strings, string, NIL_VAL);
+    table_set_value(&vm.strings, string, NIL_VAL);
     return string;
 }
 

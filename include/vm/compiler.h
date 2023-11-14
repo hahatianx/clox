@@ -39,6 +39,7 @@ typedef struct {
 
 typedef struct {
     token_t name;
+    bool mutable;
     int depth;
 } local_t;
 
@@ -46,6 +47,7 @@ typedef struct {
     local_t locals[UINT8_COUNT];
     int local_count;
     int scope_depth;
+    bool global_mut[UINT8_COUNT * UINT8_COUNT];
 } compiler_t;
 
 

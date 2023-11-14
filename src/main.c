@@ -20,6 +20,9 @@ static void repl() {
             printf("\n");
             break;
         }
+        if (!strncmp(line, "exit", 4)) {
+            break;
+        }
         interpret(line);
     }
 }

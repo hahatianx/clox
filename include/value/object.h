@@ -5,7 +5,6 @@
 
 #include "utils/linklist.h"
 #include "basic/memory.h"
-#include "vm/vm.h"
 #include "value/value.h"
 
 /**

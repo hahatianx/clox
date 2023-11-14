@@ -4,7 +4,6 @@
 #include "common.h"
 
 #include "value/value.h"
-#include "value/primitive/float.h"
 
 value_t __integer_add(value_t a, value_t b);
 value_t __integer_sub(value_t a, value_t b);

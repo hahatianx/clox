@@ -152,6 +152,7 @@ static void init_keyword_trie() {
     keyword_trie_insert(&keyword_trie, "super",  TOKEN_SUPER);
     keyword_trie_insert(&keyword_trie, "var",    TOKEN_VAR);
     keyword_trie_insert(&keyword_trie, "whle",   TOKEN_WHILE);
+    keyword_trie_insert(&keyword_trie, "mut",    TOKEN_MUT);
 
 }
 
