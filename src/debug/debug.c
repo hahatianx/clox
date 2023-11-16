@@ -9,14 +9,14 @@ static int simple_instruction(const char* name, int offset) {
 }
 
 static int two_byte_instruction(const char* name, chunk_t* chunk, int offset) {
-    printf("%-16s ", name);
+    printf("%-20s ", name);
     printf("%4d\n", chunk->code[offset + 1]);
     return offset + 2;
 }
 
 static int constant_instruction(const char* name, chunk_t* chunk, int offset) {
     uint8_t constant = chunk->code[offset + 1];
-    printf("%-16s %4d '", name, constant);
+    printf("%-20s %4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
     return offset + 2;
@@ -24,7 +24,7 @@ static int constant_instruction(const char* name, chunk_t* chunk, int offset) {
 
 static int byte_instruction(const char* name, chunk_t* chunk, int offset) {
     uint8_t slot = chunk->code[offset + 1];
-    printf("%-16s %4d\n", name, slot);
+    printf("%-20s %4d\n", name, slot);
     return offset + 2;
 }
 
@@ -32,9 +32,16 @@ static int constant_instruction_long(const char* name, chunk_t* chunk, int offse
     uint8_t constant_1 = chunk->code[offset + 1];
     uint8_t constant_2 = chunk->code[offset + 2];
     int constant = (constant_1 << 8) | (constant_2);
-    printf("%-16s %4d '", name, constant);
+    printf("%-20s %4d '", name, constant);
     print_value(chunk->constants.values[constant]);
     printf("'\n");
+    return offset + 3;
+}
+
+static int jump_instruction(const char* name, int sign, chunk_t* chunk, int offset) {
+    uint16_t jump = (uint16_t)(chunk->code[offset + 1] << 8);
+    jump |= chunk->code[offset + 2];
+    printf("%-20s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
     return offset + 3;
 }
 
@@ -129,6 +136,10 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return simple_instruction("OP_LEFT_SHIFT", offset);
         case OP_RIGHT_SHIFT:
             return simple_instruction("OP_RIGHT_SHIFT", offset);
+        case OP_JUMP:
+            return jump_instruction("OP_JUMP", 1, chunk, offset);
+        case OP_JUMP_IF_FALSE:
+            return jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
         default:
             printf ("Unknown opcode %d\n", instruction);
             return offset + 1;

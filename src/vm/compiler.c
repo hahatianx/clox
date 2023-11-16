@@ -23,6 +23,7 @@ compiler_t* current = NULL;
 chunk_t* compiling_chunk;
 
 static void block();
+static void statement();
 
 static void error_at(token_t* token, const char* message) {
     if (parser.panic_mode) return;
@@ -126,6 +127,22 @@ static void emit_constant(value_t value) {
     if (result) {
         __CLOX_COMPILER_PREVIOUS_ERROR("too many constants in a chunk. The interpreter can only support at most 65535 constants in a chunk.");
     }
+}
+
+static int emit_jump(uint8_t op) {
+    emit_byte(op);
+    emit_byte(__UINT8_MASK);
+    emit_byte(__UINT8_MASK);
+    return current_chunk()->count - 2;
+}
+
+static void patch_jump(int offset) {
+    int jump_step = current_chunk()->count - offset - 2;
+    if (jump_step > UINT16_MAX) {
+        __CLOX_ERROR("This is a clox limitation. Cannot jump over too much.");
+    }
+    current_chunk()->code[offset    ] = (jump_step >> 8) & __UINT8_MASK;
+    current_chunk()->code[offset + 1] = (jump_step     ) & __UINT8_MASK;
 }
 
 static void init_compiler(compiler_t* compiler) {
@@ -314,6 +331,23 @@ static void expression_statement() {
     emit_byte(OP_POP);
 }
 
+static void if_statement() {
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int then_jump = emit_jump(OP_JUMP_IF_FALSE);
+
+    emit_byte(OP_POP);
+    statement();
+
+    int else_jump = emit_jump(OP_JUMP);
+    patch_jump(then_jump);
+    emit_byte(OP_POP);
+    if (match(TOKEN_ELSE)) statement();
+    patch_jump(else_jump);
+}
+
 /******************** STATEMENTS   ENDS *********************/
 
 static void var_declaration() {
@@ -363,6 +397,8 @@ static void statement() {
         begin_scope();
         block();
         end_scope();
+    } else if (match(TOKEN_IF)) {
+        if_statement();
     } else {
         expression_statement();
         // __CLOX_ERROR("Unsupported statement.");
@@ -417,6 +453,24 @@ void unary(bool can_assign) {
             emit_byte(OP_NEGATE); break;
         default: return;
     }
+}
+
+void _and(bool can_assign) {
+    int end_jump = emit_jump(OP_JUMP_IF_FALSE);
+
+    emit_byte(OP_POP);
+    parse_precedence(PREC_AND);
+    patch_jump(end_jump);
+}
+
+void _or(bool can_assign) {
+    int else_jump = emit_jump(OP_JUMP_IF_FALSE);
+    int end_jump = emit_jump(OP_JUMP);
+    patch_jump(else_jump);
+
+    emit_byte(OP_POP);
+    parse_precedence(PREC_OR);
+    patch_jump(end_jump);
 }
 
 void binary(bool can_assign) {

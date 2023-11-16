@@ -14,6 +14,8 @@ void literal    (bool);
 void string     (bool);
 void variable   (bool);
 void post_binary(bool);
+void _and       (bool);
+void _or        (bool);
 
 parse_rule_t rules[] = {
 
@@ -47,7 +49,7 @@ parse_rule_t rules[] = {
     [TOKEN_STRING]         = {string,   NULL,    PREC_NONE},
     [TOKEN_INTEGER]        = {number,   NULL,    PREC_NONE},
     [TOKEN_NUMBER]         = {number,   NULL,    PREC_NONE},
-    [TOKEN_AND]            = {NULL,     NULL,    PREC_NONE},
+    [TOKEN_AND]            = {NULL,     _and,    PREC_AND},
     [TOKEN_CLASS]          = {NULL,     NULL,    PREC_NONE},
     [TOKEN_ELSE]           = {NULL,     NULL,    PREC_NONE},
     [TOKEN_FALSE]          = {literal,  NULL,    PREC_NONE},
@@ -55,7 +57,7 @@ parse_rule_t rules[] = {
     [TOKEN_FUN]            = {NULL,     NULL,    PREC_NONE},
     [TOKEN_IF]             = {NULL,     NULL,    PREC_NONE},
     [TOKEN_NIL]            = {literal,  NULL,    PREC_NONE},
-    [TOKEN_OR]             = {NULL,     NULL,    PREC_NONE},
+    [TOKEN_OR]             = {NULL,     _or,     PREC_OR},
     [TOKEN_PRINT]          = {NULL,     NULL,    PREC_NONE},
     [TOKEN_RETURN]         = {NULL,     NULL,    PREC_NONE},
     [TOKEN_SUPER]          = {NULL,     NULL,    PREC_NONE},

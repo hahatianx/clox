@@ -41,7 +41,9 @@ static value_t peek(int distance) {
 }
 
 static bool is_falsey(value_t value) {
-    return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+    return IS_NIL(value) || 
+        (IS_BOOL(value) && !AS_BOOL(value)) || 
+        (IS_INT(value) && !AS_INT(value));
 }
 
 static void free_objects() {
@@ -52,8 +54,9 @@ static void free_objects() {
 
 static interpret_result_t run() {
 #define READ_BYTE() (*vm.ip++)
+#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
 #define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (vm.chunk->constants.values[(READ_BYTE() << 8) | (READ_BYTE())])
+#define READ_CONSTANT_LONG() (vm.chunk->constants.values[READ_SHORT()])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
 #define READ_STRING_LONG()  (AS_STRING(READ_CONSTANT_LONG()))
 #define BINARY_OP(value_type, op) \
@@ -319,6 +322,16 @@ static interpret_result_t run() {
                 vm.stack[slot] = peek(0);
                 break;
             }
+            case OP_JUMP_IF_FALSE: {
+                uint16_t offset = READ_SHORT();
+                vm.ip += is_falsey(peek(0)) * offset;
+                break;
+            }
+            case OP_JUMP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip += offset;
+                break;
+            }
             default:
                 __CLOX_ERROR("The clox virtual does not support this bypte code operation.");
         }
@@ -334,6 +347,7 @@ static interpret_result_t run() {
 #undef READ_STRING
 #undef READ_CONSTANT_LONG
 #undef READ_CONSTANT
+#undef READ_SHORT
 #undef READ_BYTE
 }
 
