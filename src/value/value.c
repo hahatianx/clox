@@ -8,6 +8,9 @@
 #include "value/value.h"
 #include "value/object.h"
 
+double AS_NUMBER(value_t value) {
+    return (IS_INT(value)) ? (double) (value).as.integer : (value).as.number;
+}
 
 void init_value_array(value_array_t* array) {
     array->values = NULL;

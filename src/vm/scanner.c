@@ -150,13 +150,12 @@ static void init_keyword_trie() {
     keyword_trie_insert(&keyword_trie, "return", TOKEN_RETURN);
     keyword_trie_insert(&keyword_trie, "super",  TOKEN_SUPER);
     keyword_trie_insert(&keyword_trie, "var",    TOKEN_VAR);
-    keyword_trie_insert(&keyword_trie, "whle",   TOKEN_WHILE);
+    keyword_trie_insert(&keyword_trie, "while",   TOKEN_WHILE);
     keyword_trie_insert(&keyword_trie, "mut",    TOKEN_MUT);
 
     keyword_trie_insert(&keyword_trie, "nil",    TOKEN_NIL);
-    keyword_trie_insert(&keyword_trie,  "true",  TOKEN_TRUE);
+    keyword_trie_insert(&keyword_trie, "true",   TOKEN_TRUE);
     keyword_trie_insert(&keyword_trie, "false",  TOKEN_FALSE);
-
 }
 
 static void free_keyword_trie() {

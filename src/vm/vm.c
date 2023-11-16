@@ -65,8 +65,8 @@ static interpret_result_t run() {
             runtime_error("Operands must be numbers."); \
             return INTERPRET_RUNTIME_ERROR; \
         } \
-        double b = AS_NUMBER(pop()); \
-        double a = AS_NUMBER(pop()); \
+        double b = AS_NUMBER(pop());   \
+        double a = AS_NUMBER(pop());   \
         push(value_type(a op b));    \
     } while (0)
 #define ADD_OP \
@@ -332,6 +332,11 @@ static interpret_result_t run() {
                 vm.ip += offset;
                 break;
             }
+            case OP_LOOP: {
+                uint16_t offset = READ_SHORT();
+                vm.ip -= offset;
+                break;
+            }
             default:
                 __CLOX_ERROR("The clox virtual does not support this bypte code operation.");
         }
@@ -387,9 +392,15 @@ interpret_result_t interpret(const char* source) {
 void push(value_t value) {
     *vm.stack_top = value;
     vm.stack_top++;
+#ifdef DEBUG_VM_EXECUTION
+    printf("Current stack pointer %lu\n", vm.stack_top - vm.stack);
+#endif
 }
 
 value_t pop() {
+#ifdef DEBUG_VM_EXECUTION
+    printf("Current stack pointer %lu\n", vm.stack_top - vm.stack);
+#endif
     vm.stack_top--;
     return *vm.stack_top;
 }

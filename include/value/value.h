@@ -43,7 +43,11 @@ typedef struct {
 #define AS_BOOL(value)     ((value).as.boolean)
 #define AS_FLOAT(value)    ((value).as.number)
 #define AS_OBJECT(value)   ((value).as.obj)
-#define AS_NUMBER(value)   ((IS_INT(value)) ? (double) (value).as.integer : (value).as.number)
+/*
+    AS_NUMBER(value) must not be a macro !!
+    * value is called multiple times within the block *
+*/
+double AS_NUMBER(value_t value);
 
 #define BOOL_VAL(value)    ((value_t) {VAL_BOOL, {.boolean = value}})
 #define NIL_VAL            ((value_t) {VAL_NIL,  {.number = 0}})

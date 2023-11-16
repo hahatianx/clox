@@ -145,6 +145,17 @@ static void patch_jump(int offset) {
     current_chunk()->code[offset + 1] = (jump_step     ) & __UINT8_MASK;
 }
 
+static void emit_loop(int offset) {
+    int jump_step = current_chunk()->count - offset + 3;
+    if (jump_step > UINT16_MAX) {
+        __CLOX_ERROR("This is a clox limitation. Cannot loop over too much.");
+    }
+    emit_byte(OP_LOOP);
+    emit_byte_2(
+        (jump_step >> 8) & __UINT8_MASK,
+        (jump_step     ) & __UINT8_MASK);
+}
+
 static void init_compiler(compiler_t* compiler) {
     compiler->local_count = 0;
     compiler->scope_depth = 0;
@@ -348,6 +359,22 @@ static void if_statement() {
     patch_jump(else_jump);
 }
 
+static void while_statement() {
+    int loop_start = current_chunk()->count;
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+
+    int end_loop = emit_jump(OP_JUMP_IF_FALSE);
+    emit_byte(OP_POP);
+    statement();
+
+    emit_loop(loop_start);
+    patch_jump(end_loop);
+    emit_byte(OP_POP);
+
+}
+
 /******************** STATEMENTS   ENDS *********************/
 
 static void var_declaration() {
@@ -399,6 +426,8 @@ static void statement() {
         end_scope();
     } else if (match(TOKEN_IF)) {
         if_statement();
+    } else if (match(TOKEN_WHILE)) {
+        while_statement();
     } else {
         expression_statement();
         // __CLOX_ERROR("Unsupported statement.");
