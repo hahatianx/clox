@@ -141,21 +141,24 @@ static token_t parse_identifier() {
 static void init_keyword_trie() {
     keyword_trie_init(&keyword_trie);
     
-    keyword_trie_insert(&keyword_trie, "and",    TOKEN_AND);
-    keyword_trie_insert(&keyword_trie, "class",  TOKEN_CLASS);
-    keyword_trie_insert(&keyword_trie, "else",   TOKEN_ELSE);
-    keyword_trie_insert(&keyword_trie, "if",     TOKEN_IF);
-    keyword_trie_insert(&keyword_trie, "or",     TOKEN_OR);
-    keyword_trie_insert(&keyword_trie, "print",  TOKEN_PRINT);
-    keyword_trie_insert(&keyword_trie, "return", TOKEN_RETURN);
-    keyword_trie_insert(&keyword_trie, "super",  TOKEN_SUPER);
-    keyword_trie_insert(&keyword_trie, "var",    TOKEN_VAR);
-    keyword_trie_insert(&keyword_trie, "while",   TOKEN_WHILE);
-    keyword_trie_insert(&keyword_trie, "mut",    TOKEN_MUT);
+    keyword_trie_insert(&keyword_trie, "and",      TOKEN_AND);
+    keyword_trie_insert(&keyword_trie, "class",    TOKEN_CLASS);
+    keyword_trie_insert(&keyword_trie, "else",     TOKEN_ELSE);
+    keyword_trie_insert(&keyword_trie, "if",       TOKEN_IF);
+    keyword_trie_insert(&keyword_trie, "or",       TOKEN_OR);
+    keyword_trie_insert(&keyword_trie, "print",    TOKEN_PRINT);
+    keyword_trie_insert(&keyword_trie, "super",    TOKEN_SUPER);
+    keyword_trie_insert(&keyword_trie, "var",      TOKEN_VAR);
+    keyword_trie_insert(&keyword_trie, "while",    TOKEN_WHILE);
+    keyword_trie_insert(&keyword_trie, "mut",      TOKEN_MUT);
 
-    keyword_trie_insert(&keyword_trie, "nil",    TOKEN_NIL);
-    keyword_trie_insert(&keyword_trie, "true",   TOKEN_TRUE);
-    keyword_trie_insert(&keyword_trie, "false",  TOKEN_FALSE);
+    keyword_trie_insert(&keyword_trie, "return",   TOKEN_RETURN);
+    keyword_trie_insert(&keyword_trie, "break",    TOKEN_BREAK);
+    keyword_trie_insert(&keyword_trie, "continue", TOKEN_CONTINUE);
+
+    keyword_trie_insert(&keyword_trie, "nil",      TOKEN_NIL);
+    keyword_trie_insert(&keyword_trie, "true",     TOKEN_TRUE);
+    keyword_trie_insert(&keyword_trie, "false",    TOKEN_FALSE);
 }
 
 static void free_keyword_trie() {

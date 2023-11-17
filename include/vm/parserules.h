@@ -13,7 +13,6 @@ void binary     (bool);
 void literal    (bool);
 void string     (bool);
 void variable   (bool);
-void post_binary(bool);
 void _and       (bool);
 void _or        (bool);
 

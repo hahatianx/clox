@@ -28,6 +28,10 @@ typedef enum {
     PREC_PRIMARY
 } precedence_t;
 
+typedef enum {
+    LOOP_WHILE,
+    LOOP_FOR,
+} loop_type_t;
 
 typedef void (*parse_fn_t)(bool);
 
@@ -44,10 +48,19 @@ typedef struct {
 } local_t;
 
 typedef struct {
-    local_t locals[UINT8_COUNT];
+    uint16_t* offset;
+    int count;
+    int capacity;
+    int start;
+    loop_type_t type;
+} loop_data_t;
+
+typedef struct {
+    local_t      locals[UINT8_COUNT];
+    loop_data_t  loops[UINT8_COUNT];
     int local_count;
+    int loop_count;
     int scope_depth;
-    bool global_mut[UINT8_COUNT * UINT8_COUNT];
 } compiler_t;
 
 

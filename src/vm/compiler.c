@@ -158,6 +158,7 @@ static void emit_loop(int offset) {
 
 static void init_compiler(compiler_t* compiler) {
     compiler->local_count = 0;
+    compiler->loop_count  = 0;
     compiler->scope_depth = 0;
     current = compiler;
 }
@@ -328,6 +329,51 @@ static void named_variable(token_t name, bool can_assign) {
 
 }
 
+/********************                  **********************/
+
+static void begin_loop_scope(int start, loop_type_t type) {
+    int now = current->loop_count;
+    current->loops[now].count = 0;
+    current->loops[now].capacity = 2;
+    current->loops[now].offset = ALLOCATE(uint16_t, 2);
+
+    current->loops[now].start = start;
+    current->loops[now].type = type;
+
+    current->loop_count++;
+}
+
+static void end_loop_scope() {
+    current->loop_count--;
+    int now = current->loop_count;
+    FREE_ARRAY(uint16_t, current->loops[now].offset, current->loops[now].capacity);
+}
+
+static loop_data_t* current_loop_context() {
+    if (!current->loop_count) {
+        __CLOX_COMPILER_PREVIOUS_ERROR("it's not in any loop structure.");
+    }
+    return &current->loops[current->loop_count - 1];
+}
+
+static void insert_offset(uint16_t line) {
+    loop_data_t* cur = current_loop_context();
+    if (cur->capacity < cur->count + 1) {
+        int old_capacity = cur->capacity;
+        cur->capacity = GROW_CAPACITY(old_capacity);
+        cur->offset = GROW_ARRAY(uint16_t, cur->offset, old_capacity, cur->capacity);
+    }
+    cur->offset[cur->count] = line;
+    cur->count++;
+}
+
+static void patch_loop_jumps() {
+    uint16_t* offset = current_loop_context()->offset;
+    for (int i = 0; i < current_loop_context()->count; offset++, i++) {
+        patch_jump(*offset);
+    }
+}
+
 /******************** STATEMENTS BEGINS *********************/
 
 static void print_statement() {
@@ -359,8 +405,32 @@ static void if_statement() {
     patch_jump(else_jump);
 }
 
+static void break_statement() {
+    current_loop_context();
+    if (parser.had_error) return;
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+    int offset = emit_jump(OP_JUMP);
+    insert_offset(offset);
+}
+
+static void continue_statement() {
+    current_loop_context();
+    if (parser.had_error) return;
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+    loop_data_t* cur = current_loop_context();
+    switch(cur->type) {
+        case LOOP_WHILE:
+            emit_loop(cur->start);
+            break;
+        case LOOP_FOR:
+            break;
+    }
+}
+
 static void while_statement() {
     int loop_start = current_chunk()->count;
+    begin_loop_scope(loop_start, LOOP_WHILE);
+
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
@@ -372,7 +442,9 @@ static void while_statement() {
     emit_loop(loop_start);
     patch_jump(end_loop);
     emit_byte(OP_POP);
+    patch_loop_jumps();
 
+    end_loop_scope();
 }
 
 /******************** STATEMENTS   ENDS *********************/
@@ -409,11 +481,13 @@ static void end_scope() {
         current->local_count--;
         pop_count++;
     }
-    emit_byte_2(OP_POPN, pop_count);
-#ifdef DEBUG_PRINT_CODE
-
-#endif
+    if (pop_count == 1)
+        emit_byte(OP_POP);
+    else if (pop_count > 1)
+        emit_byte_2(OP_POPN, pop_count);
 }
+
+static void cond_statement() {}
 
 static void statement() {
     if (match(TOKEN_PRINT)) {
@@ -428,6 +502,10 @@ static void statement() {
         if_statement();
     } else if (match(TOKEN_WHILE)) {
         while_statement();
+    } else if (match(TOKEN_BREAK)) {
+        break_statement();
+    } else if (match(TOKEN_CONTINUE)) {
+        continue_statement();
     } else {
         expression_statement();
         // __CLOX_ERROR("Unsupported statement.");
