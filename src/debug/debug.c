@@ -100,6 +100,8 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return simple_instruction("OP_FALSE", offset);
         case OP_PRINT:
             return simple_instruction("OP_PRINT", offset);
+        case OP_PRINTLN:
+            return simple_instruction("OP_PRINTLN", offset);
         case OP_POP:
             return simple_instruction("OP_POP", offset);
         case OP_POPN:

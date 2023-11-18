@@ -28,11 +28,6 @@ typedef enum {
     PREC_PRIMARY
 } precedence_t;
 
-typedef enum {
-    LOOP_WHILE,
-    LOOP_FOR,
-} loop_type_t;
-
 typedef void (*parse_fn_t)(bool);
 
 typedef struct {
@@ -52,7 +47,6 @@ typedef struct {
     int count;
     int capacity;
     int start;
-    loop_type_t type;
 } loop_data_t;
 
 typedef struct {

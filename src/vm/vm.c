@@ -210,6 +210,10 @@ static interpret_result_t run() {
             case OP_FALSE: push(BOOL_VAL(0)); break;
             case OP_PRINT: {
                 print_value(pop());
+                break;
+            }
+            case OP_PRINTLN: {
+                print_value(pop());
                 printf("\n");
                 break;
             }

@@ -46,6 +46,7 @@ typedef enum {
     OP_SET_LOCAL,
     OP_GET_LOCAL,
     OP_PRINT,            // internal print, 1 byte
+    OP_PRINTLN,
     OP_POP,              // pop the stack
     OP_POPN,
 } op_code_t;
