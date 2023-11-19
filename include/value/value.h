@@ -7,6 +7,7 @@
 
 typedef enum {
     OBJ_STRING,
+    OBJ_FUNCTION,
 } object_type_t;
 
 typedef struct clox_object {

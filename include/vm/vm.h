@@ -5,19 +5,30 @@
 #include "utils/table.h"
 
 #include "value/value.h"
+#include "value/object/function.h"
+
 #include "basic/chunk.h"
 
-#define STACK_MAX 256
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_MAX)
 
 typedef struct {
     bool mutable;
 } var_metadata_t;
 
 typedef struct {
-    chunk_t* chunk;
+    object_function_t* function;
     uint8_t* ip;
-    value_t stack[STACK_MAX];
-    var_metadata_t local[STACK_MAX];
+    value_t* slots;
+    var_metadata_t* local_meta;
+} callframe_t;
+
+typedef struct {
+    callframe_t    frames [FRAMES_MAX];
+    int frame_count;
+
+    value_t        stack  [STACK_MAX];
+    var_metadata_t local  [STACK_MAX];
     value_t* stack_top;
     table_t strings;
     table_t globals;

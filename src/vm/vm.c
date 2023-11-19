@@ -21,18 +21,29 @@ vm_t vm;
 
 static void reset_stack() {
     vm.stack_top = vm.stack;
+    vm.frame_count = 0;
 }
 
 static void runtime_error(const char* format, ...) {
+    callframe_t* frame = &vm.frames[vm.frame_count - 1];
     va_list args;
     va_start(args, format);
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
 
-    size_t instruction = vm.ip - vm.chunk->code - 1;
-    int line = vm.chunk->lines[instruction];
-    fprintf(stderr, "[line %d] in script\n", line);
+    for (int i = vm.frame_count - 1; i >= 0; --i) {
+        callframe_t* frame = &vm.frames[i];
+        object_function_t* func = frame->function;
+        size_t instruction = frame->ip - func->chunk.code - 1;
+        fprintf(stderr, "[line %d] in ", func->chunk.lines[instruction]);
+        if (func->name == NULL) {
+            fprintf(stderr, "script\n");
+        } else {
+            fprintf(stderr, "%s()\n", func->name->chars);
+        }
+    }
+
     reset_stack();
 }
 
@@ -52,11 +63,46 @@ static void free_objects() {
     }
 }
 
+static bool call(object_function_t* func, int arg_count) {
+    if (arg_count != func->arity) {
+        __CLOX_RUNTIME_ERROR("Expected %d arguments but got %d.",
+            func->arity, arg_count);
+        return false;
+    }
+
+    if (vm.frame_count == FRAMES_MAX) {
+        __CLOX_RUNTIME_ERROR("Stack overflow.");
+        return false;
+    }
+
+    callframe_t* frame = &vm.frames[vm.frame_count++];
+    frame->function = func;
+    frame->ip = func->chunk.code;
+    int bias = ((vm.stack_top - arg_count - 1) - vm.stack);
+    frame->slots = vm.stack_top - arg_count - 1;
+    frame->local_meta = &vm.local[bias];
+    return true;
+}
+
+static bool call_value(value_t callee, int arg_count) {
+    if (IS_OBJECT(callee)) {
+        switch (OBJ_TYPE(callee)) {
+            case OBJ_FUNCTION:
+                return call(AS_FUNCTION(callee), arg_count);
+            default:
+                break;
+        }
+    }
+    __CLOX_RUNTIME_ERROR("The object is not callable.");
+    return false;
+}
+
 static interpret_result_t run() {
-#define READ_BYTE() (*vm.ip++)
-#define READ_SHORT() (vm.ip += 2, (uint16_t)((vm.ip[-2] << 8) | vm.ip[-1]))
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (vm.chunk->constants.values[READ_SHORT()])
+    callframe_t* frame = &vm.frames[vm.frame_count - 1];
+#define READ_BYTE() (*frame->ip++)
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT_LONG() (frame->function->chunk.constants.values[READ_SHORT()])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
 #define READ_STRING_LONG()  (AS_STRING(READ_CONSTANT_LONG()))
 #define BINARY_OP(value_type, op) \
@@ -147,9 +193,9 @@ static interpret_result_t run() {
         printed += print_value(*slot) + 4;
         printf(" ]");
     }
-    for (int i = printed; i < 50; ++i) printf(" ");
-    disassemble_instruction(vm.chunk,
-        (int)(vm.ip - vm.chunk->code));
+    for (int i = printed; i < 100; ++i) printf(" ");
+    disassemble_instruction(&frame->function->chunk,
+        (int)(frame->ip - frame->function->chunk.code));
 #endif
 
         uint8_t instruction;
@@ -199,11 +245,18 @@ static interpret_result_t run() {
                 break;
             case OP_RETURN: {
                 /*
-                  Be cautious. pop() here may result in stack underflow
+                    pop() here pops the callframe_t on stack
                 */
-                // print_value(pop());
-                printf("\n");
-                return INTERPRET_OK;
+                value_t value = pop();
+                vm.frame_count--;
+                if (vm.frame_count == 0) {
+                    pop();
+                    return INTERPRET_OK;
+                }
+                vm.stack_top = frame->slots;
+                push(value);
+                frame = &vm.frames[vm.frame_count - 1];
+                break;
             }
             case OP_NIL:   push(NIL_VAL); break;
             case OP_TRUE:  push(BOOL_VAL(1)); break;
@@ -303,46 +356,55 @@ static interpret_result_t run() {
                 break;
             }
             case OP_DEFINE_LOCAL: {
-                uint8_t arg = ((void*)vm.stack_top - (void*)vm.stack) / sizeof(value_t) - 1;
-                vm.local[arg].mutable = false;
+                uint8_t arg = vm.stack_top - frame->slots - 1;
+                frame->local_meta[arg].mutable = false;
                 break;
             }
             case OP_DEFINE_MUT_LOCAL: {
-                uint8_t arg = ((void*)vm.stack_top - (void*)vm.stack) / sizeof(value_t) - 1;
-                vm.local[arg].mutable = true;
+                uint8_t arg = vm.stack_top - frame->slots - 1;
+                frame->local_meta[arg].mutable = true;
                 break;
             }
             case OP_GET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                push(vm.stack[slot]);
+                push(frame->slots[slot]);
                 break;
             }
             case OP_SET_LOCAL: {
                 uint8_t slot = READ_BYTE();
-                if (!vm.local[slot].mutable) {
+                if (!frame->local_meta[slot].mutable) {
                     __CLOX_RUNTIME_ERROR("Cannot assign new values to immutable variable.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                vm.stack[slot] = peek(0);
+                frame->slots[slot] = peek(0);
                 break;
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                vm.ip += is_falsey(peek(0)) * offset;
+                frame->ip += is_falsey(peek(0)) * offset;
                 break;
             }
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip += offset;
+                frame->ip += offset;
                 break;
             }
             case OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                vm.ip -= offset;
+                frame->ip -= offset;
+                break;
+            }
+            case OP_CALL: {
+                int arg_count = READ_BYTE();
+                if (!call_value(peek(arg_count), arg_count)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                frame = &vm.frames[vm.frame_count - 1];
                 break;
             }
             default:
-                __CLOX_ERROR("The clox virtual does not support this bypte code operation.");
+                printf("OP: %d\n", instruction);
+                __CLOX_ERROR("The clox virtual machine does not support this bypte code operation.");
         }
     }
 
@@ -367,7 +429,6 @@ void init_vm() {
     init_table(&vm.strings);
 }
 
-
 void free_vm() {
     free_table(&vm.strings);
     free_table_var(&vm.globals);
@@ -375,21 +436,14 @@ void free_vm() {
 }
 
 interpret_result_t interpret(const char* source) {
-    chunk_t chunk;
-    init_chunk(&chunk);
-
-    if (!compile(source, &chunk)) {
-        free_chunk(&chunk);
+    object_function_t* func = compile(source);
+    if (func == NULL)
         return INTERPRET_COMPILE_ERROR;
-    }
 
-    vm.chunk = &chunk;
-    vm.ip = vm.chunk->code;
-
+    push(OBJECT_VAL(func));
+    call(func, 0);
 
     interpret_result_t result = run();
-    free_chunk(&chunk);
-
     return result;
 }
 

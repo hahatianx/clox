@@ -147,8 +147,10 @@ static void init_keyword_trie() {
     keyword_trie_insert(&keyword_trie, "if",       TOKEN_IF);
     keyword_trie_insert(&keyword_trie, "or",       TOKEN_OR);
     keyword_trie_insert(&keyword_trie, "super",    TOKEN_SUPER);
-    keyword_trie_insert(&keyword_trie, "var",      TOKEN_VAR);
     keyword_trie_insert(&keyword_trie, "mut",      TOKEN_MUT);
+
+    keyword_trie_insert(&keyword_trie, "var",      TOKEN_VAR);
+    keyword_trie_insert(&keyword_trie, "fun",      TOKEN_FUN);
 
     keyword_trie_insert(&keyword_trie, "print",    TOKEN_PRINT);
     keyword_trie_insert(&keyword_trie, "println",  TOKEN_PRINTLN);

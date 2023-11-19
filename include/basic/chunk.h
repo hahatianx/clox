@@ -31,6 +31,7 @@ typedef enum {
     OP_JUMP_IF_FALSE,     // conditional jump forward
     OP_JUMP,              // jump forward
     OP_LOOP,              // jump back
+    OP_CALL, 
     OP_RETURN,            // 1 byte  OP
 
     OP_DEFINE_GLOBAL,

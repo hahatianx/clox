@@ -15,10 +15,11 @@ void string     (bool);
 void variable   (bool);
 void _and       (bool);
 void _or        (bool);
+void call       (bool);
 
 parse_rule_t rules[] = {
 
-    [TOKEN_LEFT_PAREN]     = {grouping, NULL,    PREC_NONE},
+    [TOKEN_LEFT_PAREN]     = {grouping, call,    PREC_CALL},
     [TOKEN_RIGHT_PAREN]    = {NULL,     NULL,    PREC_NONE},
     [TOKEN_LEFT_BRACE]     = {NULL,     NULL,    PREC_NONE},
     [TOKEN_RIGHT_BRACE]    = {NULL,     NULL,    PREC_NONE},
