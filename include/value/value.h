@@ -8,6 +8,7 @@
 typedef enum {
     OBJ_STRING,
     OBJ_FUNCTION,
+    OBJ_NATIVE,
 } object_type_t;
 
 typedef struct clox_object {
@@ -38,7 +39,11 @@ typedef struct {
 #define IS_NIL(value)      ((value).type == VAL_NIL)
 #define IS_FLOAT(value)    ((value).type == VAL_FLOAT)
 #define IS_OBJECT(value)   ((value).type == VAL_OBJ)
-#define IS_NUMBER(value)   ((value).type == VAL_FLOAT || (value).type == VAL_INT)
+/*
+    IS_NUMBER(value) must not be a macro !!
+    * value is called multiple times within the block *
+*/
+bool IS_NUMBER(value_t value);
 
 #define AS_INT(value)      ((value).as.integer)
 #define AS_BOOL(value)     ((value).as.boolean)
@@ -50,11 +55,11 @@ typedef struct {
 */
 double AS_NUMBER(value_t value);
 
-#define BOOL_VAL(value)    ((value_t) {VAL_BOOL, {.boolean = value}})
-#define NIL_VAL            ((value_t) {VAL_NIL,  {.number = 0}})
-#define INT_VAL(value)     ((value_t) {VAL_INT,  {.integer = value}})
+#define BOOL_VAL(value)    ((value_t) {VAL_BOOL,  {.boolean = value}})
+#define NIL_VAL            ((value_t) {VAL_NIL,   {.number = 0}})
+#define INT_VAL(value)     ((value_t) {VAL_INT,   {.integer = value}})
 #define FLOAT_VAL(value)   ((value_t) {VAL_FLOAT, {.number = value}})
-#define OBJECT_VAL(object) ((value_t) {VAL_OBJ, {.obj = (object_t*)object}})
+#define OBJECT_VAL(object) ((value_t) {VAL_OBJ,   {.obj = (object_t*)object}})
 
 
 typedef struct {

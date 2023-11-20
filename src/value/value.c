@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <math.h>
 
-
 #include "constant.h"
 #include "basic/memory.h"
 
 #include "value/value.h"
 #include "value/object.h"
+
+bool IS_NUMBER(value_t value) {
+    return IS_FLOAT(value) || IS_INT(value);
+}
 
 double AS_NUMBER(value_t value) {
     return (IS_INT(value)) ? (double) (value).as.integer : (value).as.number;
@@ -32,7 +35,6 @@ void free_value_array(value_array_t* array) {
     init_value_array(array);
 }
 
-#ifdef DEBUG_TRACE_EXECUTION
 int print_value(value_t value) {
     switch(value.type) {
         case VAL_BOOL:
@@ -53,27 +55,6 @@ int print_value(value_t value) {
     }
     return 0;
 }
-#else
-void print_value(value_t value) {
-    switch(value.type) {
-        case VAL_BOOL:
-            printf(AS_BOOL(value) ? "true" : "false");
-            break;
-        case VAL_NIL:
-            printf("nil");
-            break;
-        case VAL_FLOAT:
-            printf("%g", AS_FLOAT(value));
-            break;
-        case VAL_INT:
-            printf("%lld", AS_INT(value));
-            break;
-        case VAL_OBJ:
-            print_object(value);
-            break;
-    }
-}
-#endif
 
 bool values_equal(value_t a, value_t b) {
     if (a.type != b.type) return false;

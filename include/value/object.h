@@ -27,10 +27,11 @@ static inline bool is_object_type(value_t value, object_type_t type) {
     return IS_OBJECT(value) && (AS_OBJECT(value))->type == type;
 }
 
-static object_t* allocate_object(size_t size, object_type_t type) {
+__attribute__((unused)) static object_t* allocate_object(size_t size, object_type_t type) {
     object_t* object = (object_t*)reallocate(NULL, 0, size);
     object->type = type;
     list_link_init(&object->link);
+    // TODO: add the object into the vm obj list, otherwise they are not freed properly
     // list_insert_head(&vm.obj, &object->link);
     return object;
 }

@@ -11,7 +11,7 @@ bool table_set_value(table_t* table, object_string_t* key, value_t value) {
     return table_set(table, key, (void*) v);
 }
 
-bool table_get_value(table_t* table, object_string_t* key, value_t* value) {
+__attribute__((unused)) bool table_get_value(table_t* table, object_string_t* key, value_t* value) {
     void* v = NULL;
     bool result = table_get(table, key, &v);
     if (result)
@@ -19,7 +19,7 @@ bool table_get_value(table_t* table, object_string_t* key, value_t* value) {
     return result;
 }
 
-bool table_delete_value(table_t* table, object_string_t* key) {
+__attribute__((unused)) bool table_delete_value(table_t* table, object_string_t* key) {
     void* return_ptr = NULL;
     bool result = table_delete(table, key, &return_ptr);
     if (result) {

@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 
 #include "common.h"
@@ -15,8 +14,6 @@ typedef struct {
 scanner_t scanner;
 
 static keyword_trie_t keyword_trie;
-
-static int nest_commend = 0;
 
 static bool is_at_end() {
     return *scanner.current == '\0';

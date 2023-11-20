@@ -16,7 +16,7 @@ bool table_get_var(table_t* table, object_string_t* key, var_t* var) {
     return result;
 }
 
-bool table_delete_var(table_t* table, object_string_t* key) {
+__attribute__((unused)) bool table_delete_var(table_t* table, object_string_t* key) {
     void* v = NULL;
     bool result = table_delete(table, key, &v);
     if (result) {

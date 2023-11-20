@@ -13,6 +13,7 @@
 #include "value/value.h"
 #include "value/primitive/float.h"
 #include "value/primitive/integer.h"
+#include "value/object/function.h"
 
 #include "vm/vm.h"
 #include "vm/compiler.h"
@@ -25,7 +26,6 @@ static void reset_stack() {
 }
 
 static void runtime_error(const char* format, ...) {
-    callframe_t* frame = &vm.frames[vm.frame_count - 1];
     va_list args;
     va_start(args, format);
     vfprintf(stderr, format, args);
@@ -89,6 +89,13 @@ static bool call_value(value_t callee, int arg_count) {
         switch (OBJ_TYPE(callee)) {
             case OBJ_FUNCTION:
                 return call(AS_FUNCTION(callee), arg_count);
+            case OBJ_NATIVE: {
+                native_fn_t native = AS_NATIVE(callee);
+                value_t result = native(arg_count, vm.stack_top - arg_count);
+                vm.stack_top -= arg_count + 1;
+                push(result);
+                return true;
+            }
             default:
                 break;
         }

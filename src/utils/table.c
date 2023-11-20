@@ -1,11 +1,8 @@
-#include <stdlib.h>
 #include <string.h>
 
 #include "common.h"
 
 #include "basic/memory.h"
-#include "value/object.h"
-#include "value/value.h"
 #include "utils/table.h"
 
 

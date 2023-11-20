@@ -116,11 +116,6 @@ static void emit_byte(uint8_t byte) {
     write_chunk(current_chunk(), byte, parser.previous.line);
 }
 
-static void emit_bytes(uint8_t* bytes, int len) {
-    for (int i = 0; i < len; i ++)
-        emit_byte(bytes[i]);
-}
-
 static void emit_byte_2(uint8_t byte, uint8_t byte2) {
     emit_byte(byte);
     emit_byte(byte2);
@@ -605,8 +600,6 @@ static void end_scope() {
         emit_byte_2(OP_POPN, pop_count);
 }
 
-static void cond_statement() {}
-
 static void statement() {
     if (match(TOKEN_PRINT) || match(TOKEN_PRINTLN)) {
         print_statement(parser.previous);
@@ -669,8 +662,10 @@ void number(bool can_assign) {
         value = INT_VAL(atoll(parser.previous.start));
     } else if (parser.previous.type == TOKEN_NUMBER) {
         value = FLOAT_VAL(strtod(parser.previous.start, NULL));
+    } else {
+        __CLOX_ERROR("Unsupported number type!");
     }
-    emit_constant((value));
+    emit_constant(value);
 }
 
 void unary(bool can_assign) {

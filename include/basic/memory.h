@@ -42,6 +42,6 @@
         *(return_ptr) = &((type*)ptr)->member;                       \
     } while (0)
 
-void* reallocate(void* pointer, size_t old_count, size_t new_size);
+__attribute__((unused)) void* reallocate(void* pointer, size_t old_count, size_t new_size);
 
 #endif

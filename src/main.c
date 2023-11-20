@@ -6,9 +6,6 @@
 
 #include "common.h"
 
-#include "basic/chunk.h"
-#include "debug/debug.h"
-
 #include "vm/vm.h"
 #include "vm/scanner.h"
 
