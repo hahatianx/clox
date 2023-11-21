@@ -1,5 +1,5 @@
-#ifndef __CLOX_TRIE_H__
-#define __CLOX_TRIE_H__
+#ifndef CLOX_TRIE_H_
+#define CLOX_TRIE_H_
 
 #include "common.h"
 

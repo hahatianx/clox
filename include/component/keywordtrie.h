@@ -1,5 +1,5 @@
-#ifndef __CLOX_KEYWORD_TRIE_H__
-#define __CLOX_KEYWORD_TRIE_H__
+#ifndef CLOX_KEYWORD_TRIE_H_
+#define CLOX_KEYWORD_TRIE_H_
 
 #include "common.h"
 #include "utils/trie.h"

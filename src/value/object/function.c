@@ -10,8 +10,9 @@ object_function_t* new_function() {
     return function;
 }
 
-object_native_func_t* new_native(native_fn_t func) {
+object_native_func_t* new_native(int argc, native_fn_t func) {
     object_native_func_t* native = ALLOCATE_OBJECT(object_native_func_t, OBJ_NATIVE);
+    native->arity = argc;
     native->function = func;
     return native;
 }

@@ -1,5 +1,5 @@
-#ifndef __CLOX_CONSTANT_H__
-#define __CLOX_CONSTANT_H__
+#ifndef CLOX_CONSTANT_H_
+#define CLOX_CONSTANT_H_
 
 #define __OP_CONSTANT_MAX_INDEX      255
 #define __OP_CONSTANT_LONG_MAX_INDEX 65535

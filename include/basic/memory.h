@@ -1,5 +1,5 @@
-#ifndef __CLOX_MEMORY_H__
-#define __CLOX_MEMORY_H__
+#ifndef CLOX_MEMORY_H_
+#define CLOX_MEMORY_H_
 
 #include <stdio.h>
 #include <stdlib.h>

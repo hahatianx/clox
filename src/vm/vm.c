@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <math.h>
 
 #include "common.h"
@@ -8,12 +9,13 @@
 #include "debug/debug.h"
 
 #include "component/vartable.h"
-#include "component/valuetable.h"
 
 #include "value/value.h"
 #include "value/primitive/float.h"
 #include "value/primitive/integer.h"
 #include "value/object/function.h"
+
+#include "value/native/clock.h"
 
 #include "vm/vm.h"
 #include "vm/compiler.h"
@@ -90,8 +92,14 @@ static bool call_value(value_t callee, int arg_count) {
             case OBJ_FUNCTION:
                 return call(AS_FUNCTION(callee), arg_count);
             case OBJ_NATIVE: {
-                native_fn_t native = AS_NATIVE(callee);
-                value_t result = native(arg_count, vm.stack_top - arg_count);
+                object_native_func_t* native = (object_native_func_t*) AS_OBJECT(callee);
+                int arity = native->arity;
+                if (arg_count != arity) {
+                    __CLOX_RUNTIME_ERROR("Expect %d arguments, but found %d.", arity, arg_count);
+                    return false;
+                }
+                native_fn_t f = native->function;
+                value_t result = f(arg_count, vm.stack_top - arg_count);
                 vm.stack_top -= arg_count + 1;
                 push(result);
                 return true;
@@ -105,9 +113,19 @@ static bool call_value(value_t callee, int arg_count) {
 }
 
 static interpret_result_t run() {
+
     callframe_t* frame = &vm.frames[vm.frame_count - 1];
-#define READ_BYTE() (*frame->ip++)
-#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
+    register uint8_t *ip = frame->ip;
+
+#define CONTEXT_SWITCH(to)        \
+    do {                          \
+        frame->ip = ip;           \
+        ip = (to)->ip;            \
+        frame = (to);             \
+    } while(0)
+
+#define READ_BYTE() (*ip++)
+#define READ_SHORT() (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
 #define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define READ_CONSTANT_LONG() (frame->function->chunk.constants.values[READ_SHORT()])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
@@ -202,7 +220,7 @@ static interpret_result_t run() {
     }
     for (int i = printed; i < 100; ++i) printf(" ");
     disassemble_instruction(&frame->function->chunk,
-        (int)(frame->ip - frame->function->chunk.code));
+        (int)(ip - frame->function->chunk.code));
 #endif
 
         uint8_t instruction;
@@ -262,7 +280,10 @@ static interpret_result_t run() {
                 }
                 vm.stack_top = frame->slots;
                 push(value);
-                frame = &vm.frames[vm.frame_count - 1];
+                /*
+                 *  from can be NULL because the top frame is popped;
+                 */
+                CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);
                 break;
             }
             case OP_NIL:   push(NIL_VAL); break;
@@ -388,17 +409,17 @@ static interpret_result_t run() {
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                frame->ip += is_falsey(peek(0)) * offset;
+                ip += is_falsey(peek(0)) * offset;
                 break;
             }
             case OP_JUMP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip += offset;
+                ip += offset;
                 break;
             }
             case OP_LOOP: {
                 uint16_t offset = READ_SHORT();
-                frame->ip -= offset;
+                ip -= offset;
                 break;
             }
             case OP_CALL: {
@@ -406,7 +427,7 @@ static interpret_result_t run() {
                 if (!call_value(peek(arg_count), arg_count)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                frame = &vm.frames[vm.frame_count - 1];
+                CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);
                 break;
             }
             default:
@@ -427,6 +448,15 @@ static interpret_result_t run() {
 #undef READ_CONSTANT
 #undef READ_SHORT
 #undef READ_BYTE
+#undef CONTEXT_SWITCH
+}
+
+static void define_native(const char* name, int argc, native_fn_t func) {
+    push(OBJECT_VAL(copy_string(name, (int)strlen(name))));
+    push(OBJECT_VAL(new_native(argc, func)));
+    table_set_var(&vm.globals, AS_STRING(vm.stack[0]), (var_t) {false, vm.stack[1]} );
+    pop();
+    pop();
 }
 
 void init_vm() {
@@ -434,6 +464,8 @@ void init_vm() {
     list_init(&vm.obj);
     init_table(&vm.globals);
     init_table(&vm.strings);
+
+    define_native("clock", 0, clock_native);
 }
 
 void free_vm() {

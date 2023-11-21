@@ -1,5 +1,5 @@
-#ifndef __CLOX_OBJECT_H__
-#define __CLOX_OBJECT_H__
+#ifndef CLOX_OBJECT_H_
+#define CLOX_OBJECT_H_
 
 #include "common.h"
 
@@ -40,11 +40,7 @@ __attribute__((unused)) static object_t* allocate_object(size_t size, object_typ
     (type*)allocate_object(sizeof(type), object_type)
 
 
-#ifdef DEBUG_PRINT_CODE
 int print_object(value_t value);
-#else
-void print_object(value_t value);
-#endif
 
 void free_object(object_t* obj);
 

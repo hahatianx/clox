@@ -1,5 +1,7 @@
-#ifndef __CLOX_COMPILER_H__
-#define __CLOX_COMPILER_H__
+#ifndef CLOX_COMPILER_H_
+#define CLOX_COMPILER_H_
+
+#include "constant.h"
 
 #include "vm/vm.h"
 #include "vm/scanner.h"

@@ -1,5 +1,5 @@
-#ifndef __CLOX_VALUE_TABLE_H__
-#define __CLOX_VALUE_TABLE_H__
+#ifndef CLOX_VALUE_TABLE_H_
+#define CLOX_VALUE_TABLE_H_
 
 #include "common.h"
 

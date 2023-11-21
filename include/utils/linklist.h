@@ -1,5 +1,5 @@
-#ifndef __CLOX_LINK_LIST_H__
-#define __CLOX_LINK_LIST_H__
+#ifndef CLOX_LINK_LIST_H_
+#define CLOX_LINK_LIST_H_
 
 #include "common.h"
 

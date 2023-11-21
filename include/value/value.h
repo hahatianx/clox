@@ -1,5 +1,5 @@
-#ifndef __CLOX_VALUE_H__
-#define __CLOX_VALUE_H__
+#ifndef CLOX_VALUE_H_
+#define CLOX_VALUE_H_
 
 #include "common.h"
 
@@ -61,14 +61,11 @@ double AS_NUMBER(value_t value);
 #define FLOAT_VAL(value)   ((value_t) {VAL_FLOAT, {.number = value}})
 #define OBJECT_VAL(object) ((value_t) {VAL_OBJ,   {.obj = (object_t*)object}})
 
-
 typedef struct {
     int capacity;
     int count;
     value_t* values;
 } value_array_t;
-
-
 
 bool values_equal(value_t a, value_t b);
 
@@ -76,11 +73,6 @@ void init_value_array (value_array_t* array);
 void write_value_array(value_array_t* array, value_t value);
 void free_value_array (value_array_t* array);
 
-#ifdef DEBUG_PRINT_CODE
 int print_value      (value_t value);
-#else
-void print_value     (value_t value);
-#endif
-
 
 #endif

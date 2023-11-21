@@ -1,5 +1,5 @@
-#ifndef __CLOX_OBJECT_STRING_H__
-#define __CLOX_OBJECT_STRING_H__
+#ifndef CLOX_OBJECT_STRING_H_
+#define CLOX_OBJECT_STRING_H_
 
 #include "value/object.h"
 

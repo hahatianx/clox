@@ -1,5 +1,5 @@
-#ifndef __CLOX_SCANNER_H__
-#define __CLOX_SCANNER_H__
+#ifndef CLOX_SCANNER_H_
+#define CLOX_SCANNER_H_
 
 typedef enum {
     // single char

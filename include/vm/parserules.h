@@ -1,5 +1,5 @@
-#ifndef __CLOX_PARSE_RULES_H__
-#define __CLOX_PARSE_RULES_H__
+#ifndef CLOX_PARSE_RULES_H_
+#define CLOX_PARSE_RULES_H_
 
 #include "common.h"
 

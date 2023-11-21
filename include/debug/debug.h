@@ -1,5 +1,5 @@
-#ifndef __CLOX_DEBUG_H__
-#define __CLOX_DEBUG_H__
+#ifndef CLOX_DEBUG_H_
+#define CLOX_DEBUG_H_
 
 #include "constant.h"
 

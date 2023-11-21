@@ -1,5 +1,5 @@
-#ifndef __CLOX_VAR_TABLE_H__
-#define __CLOX_VAR_TABLE_H__
+#ifndef CLOX_VAR_TABLE_H_
+#define CLOX_VAR_TABLE_H_
 
 #include "utils/table.h"
 

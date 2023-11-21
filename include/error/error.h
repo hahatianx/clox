@@ -1,5 +1,5 @@
-#ifndef __CLOX_ERROR_H__
-#define __CLOX_ERROR_H__
+#ifndef CLOX_ERROR_H_
+#define CLOX_ERROR_H_
 
 #include <stdio.h>
 

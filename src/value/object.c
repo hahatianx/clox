@@ -6,7 +6,6 @@
 #include "value/object/string.h"
 #include "value/object/function.h"
 
-
 static int print_function(object_function_t* func) {
     if (!func->name) {
         return printf("<script>");
@@ -18,13 +17,10 @@ int print_object(value_t value) {
     switch(OBJ_TYPE(value)) {
         case OBJ_STRING:
             return printf("%s", AS_CSTRING(value));
-            break;
         case OBJ_FUNCTION:
             return print_function(AS_FUNCTION(value));
-            break;
         case OBJ_NATIVE:
             return printf("<native fn>");
-            break;
     }
     return 0;
 }
@@ -35,6 +31,7 @@ __attribute__((unused)) void free_objects(object_t *obj) {
             object_function_t* function = (object_function_t*)obj;
             free_chunk(&function->chunk);
             FREE(object_function_t, obj);
+            break;
         }
         case OBJ_STRING: {
             object_string_t *string = (object_string_t*)obj;

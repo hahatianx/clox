@@ -39,19 +39,14 @@ int print_value(value_t value) {
     switch(value.type) {
         case VAL_BOOL:
             return printf(AS_BOOL(value) ? "true" : "false");
-            break;
         case VAL_NIL:
             return printf("nil");
-            break;
         case VAL_FLOAT:
             return printf("%g", AS_FLOAT(value));
-            break;
         case VAL_INT:
             return printf("%lld", AS_INT(value));
-            break;
         case VAL_OBJ:
             return print_object(value);
-            break;
     }
     return 0;
 }

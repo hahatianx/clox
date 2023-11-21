@@ -1,5 +1,5 @@
-#ifndef __CLOX_OBJECT_FUNCTION_H__
-#define __CLOX_OBJECT_FUNCTION_H__
+#ifndef CLOX_OBJECT_FUNCTION_H_
+#define CLOX_OBJECT_FUNCTION_H_
 
 #include "basic/chunk.h"
 
@@ -7,16 +7,17 @@
 #include "value/object.h"
 #include "value/object/string.h"
 
-typedef value_t (* native_fn_t)(int arg_count, value_t* args);
+typedef value_t (* native_fn_t)(int argc, value_t* args);
 
 typedef struct clox_native_func object_native_func_t;
 
 struct clox_native_func {
     struct clox_object obj;
+    int arity;
     native_fn_t function;
 };
 
-object_native_func_t* new_native(native_fn_t func);
+object_native_func_t* new_native(int argc, native_fn_t func);
 
 typedef struct clox_function object_function_t;
 
