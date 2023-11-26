@@ -6,8 +6,6 @@
 #include "common.h"
 #include "constant.h"
 
-#include "debug/debug.h"
-
 #include "component/vartable.h"
 
 #include "value/value.h"
@@ -19,6 +17,10 @@
 
 #include "vm/vm.h"
 #include "vm/compiler.h"
+
+#ifdef DEBUG_PRINT_CODE
+#include "debug/debug.h"
+#endif
 
 vm_t vm;
 
@@ -36,7 +38,7 @@ static void runtime_error(const char* format, ...) {
 
     for (int i = vm.frame_count - 1; i >= 0; --i) {
         callframe_t* frame = &vm.frames[i];
-        object_function_t* func = frame->function;
+        object_function_t* func = frame->closure->function;
         size_t instruction = frame->ip - func->chunk.code - 1;
         fprintf(stderr, "[line %d] in ", func->chunk.lines[instruction]);
         if (func->name == NULL) {
@@ -65,10 +67,10 @@ static void free_objects() {
     }
 }
 
-static bool call(object_function_t* func, int arg_count) {
-    if (arg_count != func->arity) {
+static bool call(object_closure_t * closure, int arg_count) {
+    if (arg_count != closure->function->arity) {
         __CLOX_RUNTIME_ERROR("Expected %d arguments but got %d.",
-            func->arity, arg_count);
+            closure->function->arity, arg_count);
         return false;
     }
 
@@ -78,8 +80,8 @@ static bool call(object_function_t* func, int arg_count) {
     }
 
     callframe_t* frame = &vm.frames[vm.frame_count++];
-    frame->function = func;
-    frame->ip = func->chunk.code;
+    frame->closure = closure;
+    frame->ip = closure->function->chunk.code;
     int bias = ((vm.stack_top - arg_count - 1) - vm.stack);
     frame->slots = vm.stack_top - arg_count - 1;
     frame->local_meta = &vm.local[bias];
@@ -89,8 +91,10 @@ static bool call(object_function_t* func, int arg_count) {
 static bool call_value(value_t callee, int arg_count) {
     if (IS_OBJECT(callee)) {
         switch (OBJ_TYPE(callee)) {
-            case OBJ_FUNCTION:
-                return call(AS_FUNCTION(callee), arg_count);
+            case OBJ_CLOSURE:
+                return call(AS_CLOSURE(callee), arg_count);
+//            case OBJ_FUNCTION:
+//                return call(AS_FUNCTION(callee), arg_count);
             case OBJ_NATIVE: {
                 object_native_func_t* native = (object_native_func_t*) AS_OBJECT(callee);
                 int arity = native->arity;
@@ -126,8 +130,8 @@ static interpret_result_t run() {
 
 #define READ_BYTE() (*ip++)
 #define READ_SHORT() (ip += 2, (uint16_t)((ip[-2] << 8) | ip[-1]))
-#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
-#define READ_CONSTANT_LONG() (frame->function->chunk.constants.values[READ_SHORT()])
+#define READ_CONSTANT() (frame->closure->function->chunk.constants.values[READ_BYTE()])
+#define READ_CONSTANT_LONG() (frame->closure->function->chunk.constants.values[READ_SHORT()])
 #define READ_STRING() (AS_STRING(READ_CONSTANT()))
 #define READ_STRING_LONG()  (AS_STRING(READ_CONSTANT_LONG()))
 #define BINARY_OP(value_type, op) \
@@ -219,8 +223,8 @@ static interpret_result_t run() {
         printf(" ]");
     }
     for (int i = printed; i < 100; ++i) printf(" ");
-    disassemble_instruction(&frame->function->chunk,
-        (int)(ip - frame->function->chunk.code));
+    disassemble_instruction(&frame->closure->function->chunk,
+        (int)(ip - frame->closure->function->chunk.code));
 #endif
 
         uint8_t instruction;
@@ -238,7 +242,7 @@ static interpret_result_t run() {
             case OP_GREATER:       BINARY_OP(BOOL_VAL,   >);           break;
             case OP_LESS:          BINARY_OP(BOOL_VAL,   <);           break;
             case OP_ADD:           ADD_OP;                             break;
-            case OP_SUBSTRACT:     SUB_OP;                             break;
+            case OP_SUBTRACT:      SUB_OP;                             break;
             case OP_MULTIPLY:      MUL_OP;                             break;
             case OP_DIVIDE:        DIV_OP;                             break;
             case OP_FLOOR_DIVIDE:  INTEGER_BINARY_OP(__integer_div);   break;
@@ -430,6 +434,12 @@ static interpret_result_t run() {
                 CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);
                 break;
             }
+            case OP_CLOSURE: {
+                object_function_t *func = AS_FUNCTION(READ_CONSTANT());
+                object_closure_t *closure = new_closure(func);
+                push(OBJECT_VAL(closure));
+                break;
+            }
             default:
                 printf("OP: %d\n", instruction);
                 __CLOX_ERROR("The clox virtual machine does not support this bypte code operation.");
@@ -480,7 +490,10 @@ interpret_result_t interpret(const char* source) {
         return INTERPRET_COMPILE_ERROR;
 
     push(OBJECT_VAL(func));
-    call(func, 0);
+    object_closure_t *closure = new_closure(func);
+    pop();
+    push(OBJECT_VAL(closure));
+    call(closure, 0);
 
     interpret_result_t result = run();
     return result;

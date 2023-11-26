@@ -30,10 +30,22 @@ struct clox_function {
 
 object_function_t* new_function();
 
+typedef struct clox_closure object_closure_t;
+
+struct clox_closure {
+    struct clox_object obj;
+    object_function_t *function;
+};
+
+object_closure_t* new_closure(object_function_t* function);
+
 #define IS_FUNCTION(value) is_object_type(value, OBJ_FUNCTION)
 #define AS_FUNCTION(value) ((object_function_t*)AS_OBJECT(value))
 
 #define IS_NATIVE(value)   is_object_type(value, OBJ_NATIVE)
 #define AS_NATIVE(value)   (((object_native_func_t *)AS_OBJECT(value))->function)
+
+#define IS_CLOSURE(value)  is_object_type(value, OBJ_CLOSURE)
+#define AS_CLOSURE(value)  ((object_closure_t *)AS_OBJECT(value))
 
 #endif

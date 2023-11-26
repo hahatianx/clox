@@ -17,7 +17,7 @@ typedef struct {
 } var_metadata_t;
 
 typedef struct {
-    object_function_t* function;
+    object_closure_t *closure;
     uint8_t* ip;
     value_t* slots;
     var_metadata_t* local_meta;

@@ -191,8 +191,7 @@ static object_function_t* end_compiler() {
 
 #ifdef DEBUG_PRINT_CODE
     if (!parser.had_error) {
-        disassemble_chunk(current_chunk(), func->name 
-            ? func->name->chars : "<script>");
+        disassemble_chunk(current_chunk(), func->name ? func->name->chars : "<script>");
     }
 #endif
     current = current->enclosing;
@@ -550,6 +549,7 @@ static void function(function_type_t type) {
     block();
 
     object_function_t* func = end_compiler();
+    emit_byte(OP_CLOSURE);
     emit_constant(OBJECT_VAL(func));
 }
 
@@ -713,7 +713,7 @@ void binary(bool can_assign) {
         case TOKEN_LESS_EQUAL:    emit_byte_2(OP_GREATER, OP_NOT); break;
 
         case TOKEN_PLUS:          emit_byte  (OP_ADD);             break;
-        case TOKEN_MINUS:         emit_byte  (OP_SUBSTRACT);       break;
+        case TOKEN_MINUS:         emit_byte  (OP_SUBTRACT);       break;
         case TOKEN_STAR:          emit_byte  (OP_MULTIPLY);        break;
         case TOKEN_SLASH:         emit_byte  (OP_DIVIDE);          break;
         case TOKEN_FLOOR_DIVIDE:  emit_byte  (OP_FLOOR_DIVIDE);    break;
@@ -784,5 +784,6 @@ object_function_t* compile(const char* source) {
         declaration();
     }
 
-    return parser.had_error ? NULL : end_compiler();
+    object_function_t* func = end_compiler();
+    return parser.had_error ? NULL : func;
 }

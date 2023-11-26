@@ -21,6 +21,8 @@ int print_object(value_t value) {
             return print_function(AS_FUNCTION(value));
         case OBJ_NATIVE:
             return printf("<native fn>");
+        case OBJ_CLOSURE:
+            return print_function(AS_CLOSURE(value)->function);
     }
     return 0;
 }
@@ -41,6 +43,10 @@ __attribute__((unused)) void free_objects(object_t *obj) {
         }
         case OBJ_NATIVE: {
             FREE(object_native_func_t, obj);
+            break;
+        }
+        case OBJ_CLOSURE: {
+            FREE(object_closure_t, obj);
             break;
         }
         default: return;

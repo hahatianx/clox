@@ -14,7 +14,7 @@ typedef enum {
     OP_NEGATE,            // 1 byte  OP 
     OP_NOT,               // 1 byte   
     OP_ADD,               // 
-    OP_SUBSTRACT,
+    OP_SUBTRACT,
     OP_MULTIPLY,
     OP_DIVIDE,
     OP_MOD,
@@ -31,7 +31,8 @@ typedef enum {
     OP_JUMP_IF_FALSE,     // conditional jump forward
     OP_JUMP,              // jump forward
     OP_LOOP,              // jump back
-    OP_CALL, 
+    OP_CALL,
+    OP_CLOSURE,
     OP_RETURN,            // 1 byte  OP
 
     OP_DEFINE_GLOBAL,

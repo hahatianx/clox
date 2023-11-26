@@ -78,8 +78,8 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return simple_instruction("OP_LESS", offset);
         case OP_ADD:
             return simple_instruction("OP_ADD", offset);
-        case OP_SUBSTRACT:
-            return simple_instruction("OP_SUBSTRACT", offset);
+        case OP_SUBTRACT:
+            return simple_instruction("OP_SUBTRACT", offset);
         case OP_MULTIPLY:
             return simple_instruction("OP_MULTIPLY", offset);
         case OP_DIVIDE:
@@ -148,6 +148,15 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return jump_instruction("OP_LOOP", -1, chunk, offset);
         case OP_CALL:
             return byte_instruction("OP_CALL", chunk, offset);
+        case OP_CLOSURE: {
+            offset++;
+            uint16_t constant = (chunk->code[offset] << 8) | chunk->code[offset + 1];
+            printf("%-20s %4d ", "OP_CLOSURE", constant);
+            print_value(chunk->constants.values[constant]);
+            printf("\n");
+            offset += 2;
+            return offset;
+        }
         default:
             printf ("Unknown opcode %d\n", instruction);
             return offset + 1;
