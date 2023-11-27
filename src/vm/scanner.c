@@ -82,6 +82,7 @@ static void skip_whitespace() {
             case '/':
                 if (peek_next() == '/') {
                     while (peek() != '\n' && !is_at_end()) advance();
+                    break;
                 } else {
                     return;
                 }
@@ -236,6 +237,5 @@ token_t scan_token() {
         case '"':
             return parse_string();
     }
-
     return error_token("Unexpected character.");
 }

@@ -10,6 +10,7 @@ typedef enum {
     OBJ_FUNCTION,
     OBJ_NATIVE,
     OBJ_CLOSURE,
+    OBJ_UPVALUE,
 } object_type_t;
 
 typedef struct clox_object {

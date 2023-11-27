@@ -33,6 +33,7 @@ typedef struct {
     table_t strings;
     table_t globals;
     list_t obj;
+    list_t open_upvalues;
 } vm_t;
 
 extern vm_t vm;

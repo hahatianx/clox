@@ -171,6 +171,7 @@ static void init_compiler(compiler_t* compiler, function_type_t type) {
 
     local_t* local = &current->locals[current->local_count++];
     local->depth = 0;
+    local->is_captured = false;
     local->name.start = "";
     local->name.length = 0;
 }
@@ -271,6 +272,42 @@ static int resolve_local(compiler_t* compiler, token_t* name) {
     return -1;
 }
 
+static int add_upvalue(compiler_t* compiler, uint8_t index, bool is_local) {
+    int upvalue_count = compiler->function->upvalue_count;
+
+    for (int i = 0; i < upvalue_count; i++) {
+        upvalue_t* upvalue = &compiler->function->upvalues[i];
+        if (upvalue->index == index && upvalue->is_local == is_local) {
+            return i;
+        }
+    }
+
+    if (upvalue_count == UINT8_COUNT) {
+        __CLOX_ERROR("Too many closure variables in function.");
+    }
+
+    compiler->upvalues[upvalue_count].is_local = is_local;
+    compiler->upvalues[upvalue_count].index = index;
+    return compiler->function->upvalue_count++;
+}
+
+static int resolve_upvalue(compiler_t* compiler, token_t* name) {
+    if (compiler->enclosing == NULL) return -1;
+
+    int local = resolve_local(compiler->enclosing, name);
+    if (~local) {
+        compiler->enclosing->locals[local].is_captured = true;
+        return add_upvalue(compiler, (uint8_t)local, true);
+    }
+
+    int upvalue = resolve_upvalue(compiler->enclosing, name);
+    if (~upvalue) {
+        return add_upvalue(compiler, (uint8_t)upvalue, false);
+    }
+
+    return -1;
+}
+
 static void add_local(token_t name) {
     if(current->local_count == UINT8_COUNT) {
         __CLOX_COMPILER_PREVIOUS_ERROR("too many local variables in function.");
@@ -278,6 +315,7 @@ static void add_local(token_t name) {
     local_t* local = &current->locals[current->local_count++];
     local->name = name;
     local->depth = -1;
+    local->is_captured = false;
 }
 
 static void declare_variable() {
@@ -316,6 +354,13 @@ static void named_variable(token_t name, bool can_assign) {
             emit_byte_2(OP_SET_LOCAL, (uint8_t) arg);
         } else {
             emit_byte_2(OP_GET_LOCAL, (uint8_t) arg);
+        }
+    } else if (~(arg = resolve_upvalue(current, &name))) {
+        if (can_assign && match(TOKEN_EQUAL)) {
+            expression();
+            emit_byte_2(OP_SET_UPVALUE, (uint8_t) arg);
+        } else {
+            emit_byte_2(OP_GET_UPVALUE, (uint8_t) arg);
         }
     } else {
         arg = identifier_constant(&name);
@@ -516,7 +561,7 @@ static void return_statement() {
         emit_return();
     } else {
         expression();
-        consume(TOKEN_SEMICOLON, "Expect ';' after ruturn value.");
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emit_byte(OP_RETURN);
     }
 }
@@ -549,8 +594,10 @@ static void function(function_type_t type) {
     block();
 
     object_function_t* func = end_compiler();
-    emit_byte(OP_CLOSURE);
-    emit_constant(OBJECT_VAL(func));
+    emit_byte_2(OP_CLOSURE, make_constant(OBJECT_VAL(func)));
+    for (int i = 0; i < func->upvalue_count; ++i) {
+        emit_byte_2(compiler.upvalues[i].is_local ? 1 : 0, compiler.upvalues[i].index);
+    }
 }
 
 static void var_declaration() {
@@ -586,18 +633,27 @@ static void begin_scope() {
     current->scope_depth++;
 }
 
+static void pop_stack_values(uint8_t *count) {
+    if (*count == 1) emit_byte(OP_POP);
+    else if (*count > 1) emit_byte_2(OP_POPN, *count);
+    *count = 0;
+}
+
 static void end_scope() {
     current->scope_depth--;
     uint8_t pop_count = 0;
     while (current->local_count > 0 &&
         current->locals[current->local_count - 1].depth > current->scope_depth) {
+        if (current->locals[current->local_count - 1].is_captured) {
+            /*  clean up pop_count first */
+            pop_stack_values(&pop_count);
+            emit_byte(OP_CLOSURE_UPVALUE);
+        } else {
+            pop_count++;
+        }
         current->local_count--;
-        pop_count++;
     }
-    if (pop_count == 1)
-        emit_byte(OP_POP);
-    else if (pop_count > 1)
-        emit_byte_2(OP_POPN, pop_count);
+    pop_stack_values(&pop_count);
 }
 
 static void statement() {

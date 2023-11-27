@@ -23,6 +23,8 @@ int print_object(value_t value) {
             return printf("<native fn>");
         case OBJ_CLOSURE:
             return print_function(AS_CLOSURE(value)->function);
+        case OBJ_UPVALUE:
+            return printf("[upvalue]");
     }
     return 0;
 }
@@ -46,7 +48,13 @@ __attribute__((unused)) void free_objects(object_t *obj) {
             break;
         }
         case OBJ_CLOSURE: {
+            object_closure_t* closure = (object_closure_t*)obj;
+            FREE_ARRAY(object_upvalue_t*, closure->upvalues, closure->upvalue_count);
             FREE(object_closure_t, obj);
+            break;
+        }
+        case OBJ_UPVALUE: {
+            FREE(object_upvalue_t, obj);
             break;
         }
         default: return;

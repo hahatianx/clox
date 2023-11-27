@@ -19,6 +19,10 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_executable(clox ${MAIN} ${C_SRC} ${C_INC}
         include/value/native/clock.h
-        src/value/native/clock.c)
+        src/value/native/clock.c
+        include/value/object/upvalue.h
+        include/vm/runtime.h)
 add_executable(test_clox ${TEST_MAIN} ${C_SRC}
-        src/value/native/clock.c)
+        src/value/native/clock.c
+        include/value/object/upvalue.h
+        include/vm/runtime.h)

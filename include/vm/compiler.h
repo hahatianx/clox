@@ -46,6 +46,7 @@ typedef struct {
 typedef struct {
     token_t name;
     int depth;
+    bool is_captured;
 } local_t;
 
 typedef struct {
@@ -61,6 +62,7 @@ typedef struct __compiler {
     object_function_t* function;
     function_type_t type;
 
+    upvalue_t    upvalues[UINT8_COUNT];
     local_t      locals[UINT8_COUNT];
     loop_data_t  loops[UINT8_COUNT];
     int local_count;

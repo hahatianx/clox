@@ -8,14 +8,7 @@
 
 #include "component/vartable.h"
 
-#include "value/value.h"
-#include "value/primitive/float.h"
-#include "value/primitive/integer.h"
-#include "value/object/function.h"
-
-#include "value/native/clock.h"
-
-#include "vm/vm.h"
+#include "vm/runtime.h"
 #include "vm/compiler.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -27,6 +20,7 @@ vm_t vm;
 static void reset_stack() {
     vm.stack_top = vm.stack;
     vm.frame_count = 0;
+    list_init(&vm.open_upvalues);
 }
 
 static void runtime_error(const char* format, ...) {
@@ -86,6 +80,35 @@ static bool call(object_closure_t * closure, int arg_count) {
     frame->slots = vm.stack_top - arg_count - 1;
     frame->local_meta = &vm.local[bias];
     return true;
+}
+
+static object_upvalue_t* capture_upvalue(value_t* local, var_metadata_t* local_meta) {
+    object_upvalue_t* iter = NULL;
+    list_iterate_begin(object_upvalue_t, link, &vm.open_upvalues, iter) {
+        if (iter->location < local)
+            goto STOP_LOOP;
+        if (iter->location == local)
+            return iter;
+    } list_iterate_end();
+    STOP_LOOP:;
+
+    object_upvalue_t* created_upvalue = new_upvalue(local);
+    created_upvalue->mutable = local_meta->mutable;
+    if (iter == NULL)
+        list_insert_head(&vm.open_upvalues, &created_upvalue->link);
+    else
+        list_insert_after(iter->link.l_prev, &created_upvalue->link);
+    return created_upvalue;
+}
+
+static void close_upvalues(value_t* last) {
+    while (!list_empty(&vm.open_upvalues)) {
+        object_upvalue_t* iter = list_head_item(object_upvalue_t, link, &vm.open_upvalues);
+        if (iter->location < last) break;
+        iter->closed = *iter->location;
+        iter->location = &iter->closed;
+        list_remove_head(&vm.open_upvalues);
+    }
 }
 
 static bool call_value(value_t callee, int arg_count) {
@@ -219,10 +242,11 @@ static interpret_result_t run() {
     int printed = 0;
     for (value_t* slot = vm.stack; slot < vm.stack_top; slot++) {
         printf("[ ");
+        printed += printf(" %p ", slot);
         printed += print_value(*slot) + 4;
         printf(" ]");
     }
-    for (int i = printed; i < 100; ++i) printf(" ");
+    for (int i = printed; i < 150; ++i) printf(" ");
     disassemble_instruction(&frame->closure->function->chunk,
         (int)(ip - frame->closure->function->chunk.code));
 #endif
@@ -277,6 +301,8 @@ static interpret_result_t run() {
                     pop() here pops the callframe_t on stack
                 */
                 value_t value = pop();
+                /* This is because the function stack is popped directly.  No endScope at the end of function call */
+                close_upvalues(frame->slots);
                 vm.frame_count--;
                 if (vm.frame_count == 0) {
                     pop();
@@ -411,6 +437,20 @@ static interpret_result_t run() {
                 frame->slots[slot] = peek(0);
                 break;
             }
+            case OP_GET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                push(*frame->closure->upvalues[slot]->location);
+                break;
+            }
+            case OP_SET_UPVALUE: {
+                uint8_t slot = READ_BYTE();
+                if (!frame->closure->upvalues[slot]->mutable) {
+                    __CLOX_RUNTIME_ERROR("Cannot assign new values to immutable variable.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                *frame->closure->upvalues[slot]->location = peek(0);
+                break;
+            }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
                 ip += is_falsey(peek(0)) * offset;
@@ -435,9 +475,25 @@ static interpret_result_t run() {
                 break;
             }
             case OP_CLOSURE: {
+                // TODO: READ_CONSTANT is not accurate here
                 object_function_t *func = AS_FUNCTION(READ_CONSTANT());
                 object_closure_t *closure = new_closure(func);
+                for (int i = 0; i < closure->upvalue_count; i++) {
+                    uint8_t is_local = READ_BYTE();
+                    uint8_t index = READ_BYTE();
+                    if (is_local) {
+                        closure->upvalues[i] = capture_upvalue(
+                                frame->slots + index, frame->local_meta + index);
+                    } else {
+                        closure->upvalues[i] = frame->closure->upvalues[index];
+                    }
+                }
                 push(OBJECT_VAL(closure));
+                break;
+            }
+            case OP_CLOSURE_UPVALUE: {
+                close_upvalues(vm.stack_top - 1);
+                pop();
                 break;
             }
             default:
@@ -472,6 +528,7 @@ static void define_native(const char* name, int argc, native_fn_t func) {
 void init_vm() {
     reset_stack();
     list_init(&vm.obj);
+    list_init(&vm.open_upvalues);
     init_table(&vm.globals);
     init_table(&vm.strings);
 

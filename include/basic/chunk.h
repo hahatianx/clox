@@ -33,6 +33,7 @@ typedef enum {
     OP_LOOP,              // jump back
     OP_CALL,
     OP_CLOSURE,
+    OP_CLOSURE_UPVALUE,
     OP_RETURN,            // 1 byte  OP
 
     OP_DEFINE_GLOBAL,
@@ -47,6 +48,8 @@ typedef enum {
     OP_DEFINE_MUT_LOCAL,
     OP_SET_LOCAL,
     OP_GET_LOCAL,
+    OP_SET_UPVALUE,
+    OP_GET_UPVALUE,
     OP_PRINT,            // internal print, 1 byte
     OP_PRINTLN,
     OP_POP,              // pop the stack

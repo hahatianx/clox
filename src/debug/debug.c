@@ -130,6 +130,10 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return byte_instruction("OP_GET_LOCAL", chunk, offset);
         case OP_SET_LOCAL:
             return byte_instruction("OP_SET_LOCAL", chunk, offset);
+        case OP_GET_UPVALUE:
+            return byte_instruction("OP_GET_UPVALUE", chunk, offset);
+        case OP_SET_UPVALUE:
+            return byte_instruction("OP_SET_UPVALUE", chunk, offset);
         case OP_BIT_AND:
             return simple_instruction("OP_BIT_AND", offset);
         case OP_BIT_OR:
@@ -148,13 +152,25 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return jump_instruction("OP_LOOP", -1, chunk, offset);
         case OP_CALL:
             return byte_instruction("OP_CALL", chunk, offset);
+        case OP_CLOSURE_UPVALUE:
+            return simple_instruction("OP_CLOSURE_UPVALUE", offset);
         case OP_CLOSURE: {
             offset++;
-            uint16_t constant = (chunk->code[offset] << 8) | chunk->code[offset + 1];
+//            uint16_t constant = (chunk->code[offset] << 8) | chunk->code[offset + 1];
+            uint8_t constant = chunk->code[offset++];
             printf("%-20s %4d ", "OP_CLOSURE", constant);
             print_value(chunk->constants.values[constant]);
             printf("\n");
-            offset += 2;
+//            offset += 2;
+
+            object_function_t *func = AS_FUNCTION(chunk->constants.values[constant]);
+            for (int j = 0; j < func->upvalue_count; ++j) {
+                int is_local = chunk->code[offset++];
+                int index = chunk->code[offset++];
+                printf("%04d      |           %-10s  %d\n",
+                       offset-2, is_local ? "local" : "upvalue", index);
+            }
+
             return offset;
         }
         default:
