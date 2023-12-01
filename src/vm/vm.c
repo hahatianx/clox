@@ -498,7 +498,7 @@ static interpret_result_t run() {
             }
             default:
                 printf("OP: %d\n", instruction);
-                __CLOX_ERROR("The clox virtual machine does not support this bypte code operation.");
+                __CLOX_ERROR("The clox virtual machine does not support this byte code operation.");
         }
     }
 

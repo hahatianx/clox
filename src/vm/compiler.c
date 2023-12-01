@@ -493,6 +493,14 @@ static void while_statement() {
 
     int end_loop = emit_jump(OP_JUMP_IF_FALSE);
     emit_byte(OP_POP);
+
+    /*
+     *      WARN: the behavior of variable scope is different
+     *   {  statements; } has a separate variable scope for each loop.
+     *      statement     itself shares the scope with the outer function scope
+     *    the closure behaves differently
+     *    please refer to p494 DESIGN NOTE: CLOSING OVER THE LOOP VARIABLE
+     */
     statement();
 
     emit_loop(loop_start);
@@ -541,6 +549,13 @@ static void for_statement() {
 
     begin_loop_scope(~inc_start ? inc_start : loop_start);
 
+    /*
+     *      WARN: the behavior of variable scope is different
+     *   {  statements; } has a separate variable scope for each loop.
+     *      statement     itself shares the scope with the outer function scope
+     *    the closure behaves differently
+     *    please refer to p494 DESIGN NOTE: CLOSING OVER THE LOOP VARIABLE
+     */
     statement();
     emit_loop(~inc_start ? inc_start : loop_start);
     if (~exit_loop) {
