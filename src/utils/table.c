@@ -103,7 +103,9 @@ bool table_delete(table_t* table, object_string_t* key, void** value) {
     table_entry_t* entry = find_entry(table->entries, table->capacity, key);
     if (entry->key == NULL) return false;
 
-    *value = entry->value;
+    if (value) {
+        *value = entry->value;
+    }
 
     entry->key = NULL;
     entry->value = TOME;
@@ -124,6 +126,6 @@ object_string_t* table_find_string(table_t* table, const char* chars, int length
                     memcmp(entry->key->chars, chars, length) == 0) {
             return entry->key;
         }
-        index = (index + 1) % table->capacity;
+        index = (index + 1) & (table->capacity - 1);
     }
 }

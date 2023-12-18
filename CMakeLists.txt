@@ -20,9 +20,13 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 add_executable(clox ${MAIN} ${C_SRC} ${C_INC}
         include/value/native/clock.h
         src/value/native/clock.c
-        include/value/object/upvalue.h
-        include/vm/runtime.h)
+        include/vm/runtime.h
+        include/utils/stack.h
+        src/utils/stack.c
+        src/component/graystack.c
+        include/component/graystack.h
+        include/switch.h
+        src/switch.c)
 add_executable(test_clox ${TEST_MAIN} ${C_SRC}
         src/value/native/clock.c
-        include/value/object/upvalue.h
         include/vm/runtime.h)

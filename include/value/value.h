@@ -15,6 +15,7 @@ typedef enum {
 
 typedef struct clox_object {
     object_type_t type;
+    bool is_marked;
     list_link_t link;
 } object_t;
 

@@ -38,3 +38,14 @@ void free_table_value(table_t* table) {
     }
     free_table(table);
 }
+
+// TODO: think about a way to mark all tables
+void mark_table_value(table_t* table) {
+    for (int i = 0; i < table->capacity; i++) {
+        table_entry_t* entry = &table->entries[i];
+        if (entry->key == NULL || IS_ENTRY_NULL(entry->value))
+            continue;
+        mark_object((object_t*)entry->key);
+        mark_value(*((value_t*)entry->value));
+    }
+}

@@ -4,6 +4,8 @@
 
 #include "common.h"
 #include "constant.h"
+#include "switch.h"
+
 #include "error/error.h"
 
 #include "vm/compiler.h"
@@ -840,6 +842,17 @@ void call(bool can_assign) {
 }
 
 object_function_t* compile(const char* source) {
+    /*
+     *  Collect garbage before compiling, and then
+     *  pause garbage collector while the vm is compiling
+     *
+     *  When compiling, there shouldn't be any objects
+     *  being freed
+     */
+    collect_garbage();
+    bool enclosed_gc_setting = do_garbage_collector;
+    do_garbage_collector = false;
+
     init_scanner(source);
 
     compiler_t compiler;
@@ -856,5 +869,16 @@ object_function_t* compile(const char* source) {
     }
 
     object_function_t* func = end_compiler();
+    merge_temporary();
+
+    do_garbage_collector = enclosed_gc_setting;
     return parser.had_error ? NULL : func;
+}
+
+void mark_compiler_roots() {
+    compiler_t *compiler = current;
+    while (compiler) {
+        mark_object((object_t*)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }

@@ -14,6 +14,7 @@ __attribute__((unused)) bool table_get_value(table_t* table, object_string_t* ke
 __attribute__((unused)) bool table_delete_value(table_t* table, object_string_t* key);
 
 void free_table_value(table_t* table);
+void mark_table_value(table_t* table);
 
 
 #endif

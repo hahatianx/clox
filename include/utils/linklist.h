@@ -75,5 +75,32 @@ typedef struct link {
 #define list_empty(head) \
     ((head)->l_prev == (head))
 
+#define list_front(head) \
+    ((head)->l_next)
+
+//#define list_insert_multi(a, b) \
+//    do {                           \
+////        list_link_t *head = (a);\
+////        list_link_t *l = (b);   \
+////        list_link_t *link_f = l->l_next; \
+////        list_link_t *link_b = l->l_prev; \
+////        l->l_next = l->l_prev = l; \
+////        link_b->l_next = head->l_next;   \
+////        head->l_next->l_prev = link_b;   \
+////        link_f->l_prev = head;     \
+////        head->l_next = link_f;     \
+//
+//    } while (0)
+
+#define list_insert_multi(a, b) \
+    list_link_t *head = (a);    \
+    list_link_t *l = (b); \
+    do { \
+        while (!list_empty(head)) { \
+            list_link_t *f = list_front(l); \
+            list_remove_head(head); \
+            list_insert_head(head, f); \
+        } \
+    } while (0)
 
 #endif

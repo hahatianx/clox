@@ -1,10 +1,10 @@
 #include <stdio.h>
 
+#include "common.h"
 #include "basic/memory.h"
+#include "vm/runtime.h"
 
-#include "value/object.h"
-#include "value/object/string.h"
-#include "value/object/function.h"
+list_t temporary_objs;
 
 static int print_function(object_function_t* func) {
     if (!func->name) {
@@ -21,15 +21,73 @@ int print_object(value_t value) {
             return print_function(AS_FUNCTION(value));
         case OBJ_NATIVE:
             return printf("<native fn>");
-        case OBJ_CLOSURE:
-            return print_function(AS_CLOSURE(value)->function);
+        case OBJ_CLOSURE: {
+            int len = 0;
+            len += printf("<closure ");
+            len += print_function(AS_CLOSURE(value)->function);
+            len += printf(">");
+            return len;
+        }
         case OBJ_UPVALUE:
             return printf("[upvalue]");
     }
     return 0;
 }
 
-__attribute__((unused)) void free_objects(object_t *obj) {
+void blacken_object(object_t* object) {
+#ifdef DEBUG_LOG_GC
+    printf("%p blacken ", (void*)object);
+    print_value(OBJECT_VAL(object));
+    printf("\n");
+#endif
+    switch (object->type) {
+        case OBJ_CLOSURE: {
+            object_closure_t *closure = (object_closure_t*)object;
+            mark_object((object_t*)closure->function);
+            for (int i = 0; i < closure->upvalue_count; ++i) {
+                mark_object((object_t*)closure->upvalues[i]);
+            }
+            break;
+        }
+        case OBJ_FUNCTION: {
+            object_function_t *function = (object_function_t*)object;
+            mark_object((object_t*)function->name);
+            mark_array(&function->chunk.constants);
+        }
+        case OBJ_UPVALUE:
+            mark_value(((object_upvalue_t*)object)->closed);
+            break;
+        case OBJ_NATIVE:
+        case OBJ_STRING:
+            break;
+    }
+}
+
+
+object_t* allocate_object(size_t size, object_type_t type) {
+    object_t* object = (object_t*)reallocate(NULL, 0, size);
+    object->type = type;
+    object->is_marked = false;
+    list_link_init(&object->link);
+    list_insert_head(&temporary_objs, &object->link);
+
+#ifdef DEBUG_LOG_GC
+    printf("%p allocate %zu for %d\n", (void*)object, size, type);
+#endif
+
+    return object;
+}
+
+void merge_temporary() {
+    list_insert_multi(&vm.obj, &temporary_objs);
+}
+
+void free_object(object_t *obj) {
+
+#ifdef DEBUG_LOG_GC
+    printf("%p free type %d\n", (void*)obj, obj->type);
+#endif
+
     switch (obj->type) {
         case OBJ_FUNCTION: {
             object_function_t* function = (object_function_t*)obj;

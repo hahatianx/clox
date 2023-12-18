@@ -7,15 +7,75 @@
 #include "constant.h"
 
 #include "component/vartable.h"
+#include "component/graystack.h"
 
 #include "vm/runtime.h"
 #include "vm/compiler.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug/debug.h"
+#include "switch.h"
+
 #endif
 
 vm_t vm;
+
+#ifdef DEBUG_VM_MEMORY
+static void print_vm_structure() {
+    printf("----------------------------------\n");
+    // print var tables
+    for (int i = 0; i < vm.globals.capacity; ++i) {
+        table_entry_t *entry = &vm.globals.entries[i];
+        if (entry->key == NULL) continue;
+        printf("table item %p, key ", entry);
+        print_value(OBJECT_VAL(entry->key));
+        printf(", value ");
+        if (entry->value == NULL) printf("null\n");
+        else {
+            print_value(((var_t *) entry->value)->v);
+            printf(" mutable? %d", ((var_t *) entry->value)->mutable);
+            printf("\n");
+        }
+    }
+
+    // print interned strings
+    printf("\nstrings\n");
+    for (int i = 0; i < vm.strings.capacity; ++i) {
+        table_entry_t *entry = &vm.strings.entries[i];
+        if (entry->key == NULL) continue;
+        print_value(OBJECT_VAL(entry->key));
+        printf("\n");
+    }
+    printf("\n");
+
+    // print objects
+    object_t* iter = NULL;
+    list_iterate_begin(object_t, link, &vm.obj, iter) {
+        printf("object %p, type ", iter);
+        switch (iter->type) {
+            case OBJ_STRING:
+                printf("%10s", "STRING");
+                break;
+            case OBJ_FUNCTION:
+                printf("%10s", "FUNCTION");
+                break;
+            case OBJ_NATIVE:
+                printf("%10s", "NATIVE");
+                break;
+            case OBJ_CLOSURE:
+                printf("%10s", "CLOSURE");
+                break;
+            case OBJ_UPVALUE:
+                printf("%10s", "UPVALUE");
+                break;
+        }
+        printf(", value ");
+        print_value(OBJECT_VAL(iter));
+        printf("\n");
+    } list_iterate_end();
+    printf("----------------------------------\n\n\n");
+}
+#endif
 
 static void reset_stack() {
     vm.stack_top = vm.stack;
@@ -49,7 +109,7 @@ static value_t peek(int distance) {
     return vm.stack_top[-1 - distance];
 }
 
-static bool is_falsey(value_t value) {
+static bool is_falsy(value_t value) {
     return IS_NIL(value) || 
         (IS_BOOL(value) && !AS_BOOL(value)) || 
         (IS_INT(value) && !AS_INT(value));
@@ -283,7 +343,7 @@ static interpret_result_t run() {
                 break;
             }
             case OP_NOT:
-                push(BOOL_VAL(is_falsey(pop())));
+                push(BOOL_VAL(is_falsy(pop())));
                 break;
             case OP_NEGATE:     
                 if (!IS_NUMBER(peek(0))) {
@@ -453,7 +513,7 @@ static interpret_result_t run() {
             }
             case OP_JUMP_IF_FALSE: {
                 uint16_t offset = READ_SHORT();
-                ip += is_falsey(peek(0)) * offset;
+                ip += is_falsy(peek(0)) * offset;
                 break;
             }
             case OP_JUMP: {
@@ -500,7 +560,17 @@ static interpret_result_t run() {
                 printf("OP: %d\n", instruction);
                 __CLOX_ERROR("The clox virtual machine does not support this byte code operation.");
         }
-    }
+
+        /*
+         *  All objects are added to temporary list while executing the operations.
+         *  They are merged into main vm obj list once the operations are fully completed.
+         */
+        merge_temporary();
+
+#ifdef DEBUG_VM_MEMORY
+        print_vm_structure();
+#endif
+    } // end for
 
 #undef INTEGER_BINARY_OP
 #undef DIV_OP
@@ -526,11 +596,18 @@ static void define_native(const char* name, int argc, native_fn_t func) {
 }
 
 void init_vm() {
+    /*
+     * Initialize global vm parameters
+     */
+    do_garbage_collector = true;
+
     reset_stack();
+    list_init(&temporary_objs);
     list_init(&vm.obj);
     list_init(&vm.open_upvalues);
     init_table(&vm.globals);
     init_table(&vm.strings);
+    init_stack(&vm.gray_stack);
 
     define_native("clock", 0, clock_native);
 }
@@ -538,6 +615,7 @@ void init_vm() {
 void free_vm() {
     free_table(&vm.strings);
     free_table_var(&vm.globals);
+    free_stack(&vm.gray_stack);
     free_objects();
 }
 
@@ -570,4 +648,17 @@ value_t pop() {
 #endif
     vm.stack_top--;
     return *vm.stack_top;
+}
+
+void remove_unused_strings() {
+    table_t *table = &vm.strings;
+    for (int i = 0; i < table->capacity; ++i) {
+        table_entry_t *entry = &table->entries[i];
+        if (entry->key && !entry->key->obj.is_marked) {
+#ifdef DEBUG_LOG_GC
+            printf("Remove %s from interned strings.\n", ((object_string_t*)entry->key)->chars);
+#endif
+            table_delete(table, entry->key, NULL);
+        }
+    }
 }

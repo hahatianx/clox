@@ -35,3 +35,26 @@ void free_table_var(table_t* table) {
     }
     free_table(table);
 }
+
+void mark_table_var(table_t* table) {
+#ifdef DEBUG_PRINT_TABLE
+    printf("number of var table: %d\n", table->count);
+    printf("capacity: %d, count: %d\n", table->capacity,  table->count);
+#endif
+    for (int i = 0; i < table->capacity; i++) {
+        table_entry_t *entry = &table->entries[i];
+        /*
+         *  difference from the book.
+         *  In the table here, the value is a pointer instead of an actual value_t
+         */
+        if (entry->key == NULL || IS_ENTRY_NULL(entry->value))
+            continue;
+#ifdef DEBUG_PRINT_TABLE
+        printf("table number %d, entry %p, key %s, value ", i, entry, ((object_string_t*)entry->key)->chars);
+        print_value(((var_t*)entry->value)->v);
+        printf("\n");
+#endif
+        mark_object((object_t*)entry->key);
+        mark_value(((var_t*)entry->value)->v);
+    }
+}

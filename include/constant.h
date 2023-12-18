@@ -7,5 +7,6 @@
 #define __FLOAT_PRECISION            1e-12
 
 #define UINT8_COUNT (UINT8_MAX + 1)
+#define OBJECT_MAX  256
 
 #endif

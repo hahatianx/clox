@@ -31,14 +31,14 @@ struct clox_upvalue {
     bool mutable;
 };
 
-typedef struct clox_function object_function_t;
-
 typedef struct {
     uint8_t index;
     bool is_local;
 } upvalue_t;
 
 object_upvalue_t* new_upvalue(value_t* slot);
+
+typedef struct clox_function object_function_t;
 
 struct clox_function {
     struct clox_object obj;
