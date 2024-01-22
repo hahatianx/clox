@@ -101,6 +101,7 @@ static void sweep() {
 #ifdef DEBUG_PRINT_OBJECT
         printf("object iterated %p, value ", iter);
         print_value(OBJECT_VAL(iter));
+        printf(", marked?: %d, prev: %p, next: %p, ", iter->is_marked, iter->link.l_prev, iter->link.l_next);
         printf("\n");
 #endif
         if (count == OBJECT_MAX) {
@@ -124,18 +125,39 @@ static void sweep() {
     for (int i = 0; i < count; i++) {
         object_t* obj = objects_to_sweep[i];
 #ifdef DEBUG_PRINT_FREED
-        printf("item getting freed: ");
+        printf("item getting freed %p: ", obj);
         print_value(OBJECT_VAL(obj));
         printf("\n");
 #endif
         list_remove(&obj->link);
         free_object(obj);
     }
+    printf("head prev: %p, head next: %p\n", vm.obj.l_prev, vm.obj.l_next);
+    list_iterate_begin(object_t, link, &vm.obj, iter) {
+#ifdef DEBUG_PRINT_OBJECT
+        printf("object iterated %p, value ", iter);
+        print_value(OBJECT_VAL(iter));
+        printf(", marked?: %d, prev: %p, next: %p, ", iter->is_marked, iter->link.l_prev, iter->link.l_next);
+        printf("\n");
+#endif
+    } list_iterate_end();
 }
 
 void collect_garbage() {
 #ifdef DEBUG_LOG_GC
     printf("-- gc begin\n");
+#endif
+
+#ifdef DEBUG_PRINT_OBJECT
+    printf("-- object status before marking --\n");
+    object_t* iter = NULL;
+    list_iterate_begin(object_t, link, &vm.obj, iter) {
+        printf("object iterated %p, value ", iter);
+        print_value(OBJECT_VAL(iter));
+        printf(", marked?: %d, prev: %p, next: %p, ", iter->is_marked, iter->link.l_prev, iter->link.l_next);
+        printf("\n");
+    } list_iterate_end();
+    printf("-- object ends here -- \n");
 #endif
 
     mark_roots();

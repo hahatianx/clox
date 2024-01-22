@@ -39,8 +39,8 @@ typedef struct link {
         list_link_t *cur = (link); \
         list_link_t *prev = cur->l_prev; \
         list_link_t *next = cur->l_next; \
-        next->l_prev = prev; \
-        prev->l_next = next; \
+        cur->l_next->l_prev = prev; \
+        cur->l_prev->l_next = next; \
         cur->l_prev = cur->l_next = NULL; \
     } while (0)
 
@@ -96,9 +96,9 @@ typedef struct link {
     list_link_t *head = (a);    \
     list_link_t *l = (b); \
     do { \
-        while (!list_empty(head)) { \
+        while (!list_empty(l)) { \
             list_link_t *f = list_front(l); \
-            list_remove_head(head); \
+            list_remove_head(l); \
             list_insert_head(head, f); \
         } \
     } while (0)

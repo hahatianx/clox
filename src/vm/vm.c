@@ -39,6 +39,7 @@ static void print_vm_structure() {
     }
 
     // print interned strings
+#ifdef DEBUG_PRINT_STRINGS
     printf("\nstrings\n");
     for (int i = 0; i < vm.strings.capacity; ++i) {
         table_entry_t *entry = &vm.strings.entries[i];
@@ -47,8 +48,10 @@ static void print_vm_structure() {
         printf("\n");
     }
     printf("\n");
+#endif
 
     // print objects
+#ifdef DEBUG_PRINT_OBJCTS
     object_t* iter = NULL;
     list_iterate_begin(object_t, link, &vm.obj, iter) {
         printf("object %p, type ", iter);
@@ -75,6 +78,7 @@ static void print_vm_structure() {
     } list_iterate_end();
     printf("----------------------------------\n\n\n");
 }
+#endif
 #endif
 
 static void reset_stack() {
@@ -361,7 +365,6 @@ static interpret_result_t run() {
                     pop() here pops the callframe_t on stack
                 */
                 value_t value = pop();
-                /* This is because the function stack is popped directly.  No endScope at the end of function call */
                 close_upvalues(frame->slots);
                 vm.frame_count--;
                 if (vm.frame_count == 0) {
@@ -370,9 +373,6 @@ static interpret_result_t run() {
                 }
                 vm.stack_top = frame->slots;
                 push(value);
-                /*
-                 *  from can be NULL because the top frame is popped;
-                 */
                 CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);
                 break;
             }
@@ -630,6 +630,7 @@ interpret_result_t interpret(const char* source) {
     push(OBJECT_VAL(closure));
     call(closure, 0);
 
+    merge_temporary();
     interpret_result_t result = run();
     return result;
 }
