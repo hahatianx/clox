@@ -132,7 +132,6 @@ static void sweep() {
         list_remove(&obj->link);
         free_object(obj);
     }
-    printf("head prev: %p, head next: %p\n", vm.obj.l_prev, vm.obj.l_next);
     list_iterate_begin(object_t, link, &vm.obj, iter) {
 #ifdef DEBUG_PRINT_OBJECT
         printf("object iterated %p, value ", iter);

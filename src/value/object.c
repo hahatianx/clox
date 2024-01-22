@@ -23,8 +23,11 @@ int print_object(value_t value) {
             return printf("<native fn>");
         case OBJ_CLOSURE: {
             int len = 0;
+            void* enclosed = AS_CLOSURE(value)->function;
             len += printf("<closure ");
-            len += print_function(AS_CLOSURE(value)->function);
+            len += printf(" [%p] ", enclosed);
+            if (enclosed)
+                len += print_function(AS_CLOSURE(value)->function);
             len += printf(">");
             return len;
         }
