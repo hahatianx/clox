@@ -17,6 +17,7 @@ void _and       (bool);
 void _or        (bool);
 void call       (bool);
 void dot        (bool);
+void lambda     (bool);
 
 parse_rule_t rules[] = {
 
@@ -50,6 +51,7 @@ parse_rule_t rules[] = {
     [TOKEN_STRING]         = {string,   NULL,    PREC_NONE},
     [TOKEN_INTEGER]        = {number,   NULL,    PREC_NONE},
     [TOKEN_NUMBER]         = {number,   NULL,    PREC_NONE},
+    [TOKEN_LAMBDA]         = {lambda,   NULL,    PREC_NONE},
     [TOKEN_AND]            = {NULL,     _and,    PREC_AND},
     [TOKEN_CLASS]          = {NULL,     NULL,    PREC_NONE},
     [TOKEN_ELSE]           = {NULL,     NULL,    PREC_NONE},

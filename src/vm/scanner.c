@@ -149,6 +149,7 @@ static void init_keyword_trie() {
 
     keyword_trie_insert(&keyword_trie, "var",      TOKEN_VAR);
     keyword_trie_insert(&keyword_trie, "fun",      TOKEN_FUN);
+    keyword_trie_insert(&keyword_trie, "lambda",   TOKEN_LAMBDA);
 
     keyword_trie_insert(&keyword_trie, "print",    TOKEN_PRINT);
     keyword_trie_insert(&keyword_trie, "println",  TOKEN_PRINTLN);
@@ -216,8 +217,12 @@ token_t scan_token() {
             return make_token(
                 match('=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
         case '=':
-            return make_token(
-                match('=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL);
+            if (match('='))
+                return make_token(TOKEN_EQUAL_EQUAL);
+            else if (match('>'))
+                return make_token(TOKEN_ARROW);
+            else
+                return make_token(TOKEN_EQUAL);
         case '<':
             if (match('=')) {
                 return make_token(TOKEN_LESS_EQUAL);

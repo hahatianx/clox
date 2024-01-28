@@ -617,6 +617,41 @@ static void function(function_type_t type) {
     }
 }
 
+static void compile_lambda(function_type_t type) {
+    compiler_t compiler;
+    init_compiler(&compiler, type);
+    begin_scope();
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after keyword 'lambda'.");
+
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            current->function->arity++;
+            if (current->function->arity > 255) {
+                __CLOX_COMPILER_CURRENT_ERROR("Can't have more than 255 parameters.");
+            }
+            bool mutable = false;
+            if (match(TOKEN_MUT)) mutable = true;
+            uint16_t constant = parse_variable("Expect parameter name.");
+            define_variable(constant, mutable);
+        } while(match(TOKEN_COMMA));
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(TOKEN_ARROW, "Expect '=>' between lambda parameters and lambda body.");
+
+    if (match(TOKEN_LEFT_BRACE))
+        block();
+    else {
+        expression();
+        emit_byte(OP_RETURN);
+    }
+
+    object_function_t* func = end_compiler();
+    emit_byte_2(OP_CLOSURE, make_constant(OBJECT_VAL(func)));
+    for (int i = 0; i < func->upvalue_count; ++i) {
+        emit_byte_2(compiler.upvalues[i].is_local ? 1 : 0, compiler.upvalues[i].index);
+    }
+}
+
 static void var_declaration() {
     bool mutable = false;
     if (match(TOKEN_MUT)) {
@@ -833,6 +868,10 @@ void literal(bool can_assign) {
         case TOKEN_FALSE:         emit_byte  (OP_FALSE); break;
         default: return;
     }
+}
+
+void lambda(bool can_assign) {
+    compile_lambda(TYPE_FUNCTION);
 }
 
 void string(bool can_assign) {
