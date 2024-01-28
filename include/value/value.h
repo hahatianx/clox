@@ -9,6 +9,8 @@ typedef enum {
     OBJ_STRING,
     OBJ_FUNCTION,
     OBJ_NATIVE,
+    OBJ_CLASS,
+    OBJ_INSTANCE,
     OBJ_CLOSURE,
     OBJ_UPVALUE,
 } object_type_t;

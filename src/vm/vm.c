@@ -15,6 +15,7 @@
 #ifdef DEBUG_PRINT_CODE
 #include "debug/debug.h"
 #include "switch.h"
+#include "component/valuetable.h"
 
 #endif
 
@@ -178,6 +179,11 @@ static void close_upvalues(value_t* last) {
 static bool call_value(value_t callee, int arg_count) {
     if (IS_OBJECT(callee)) {
         switch (OBJ_TYPE(callee)) {
+            case OBJ_CLASS: {
+                object_class_t *klass = AS_CLASS(callee);
+                vm.stack_top[-arg_count - 1] = OBJECT_VAL(new_instance(klass));
+                return true;
+            }
             case OBJ_CLOSURE:
                 return call(AS_CLOSURE(callee), arg_count);
 //            case OBJ_FUNCTION:
@@ -495,6 +501,58 @@ static interpret_result_t run() {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 frame->slots[slot] = peek(0);
+                break;
+            }
+            case OP_CLASS: {
+                push(OBJECT_VAL(new_class(READ_STRING())));
+                break;
+            }
+            case OP_CLASS_LONG: {
+                push(OBJECT_VAL(new_class(READ_STRING_LONG())));
+                break;
+            }
+            case OP_GET_PROPERTY:
+            case OP_GET_PROPERTY_LONG: {
+                if (!IS_INSTANCE(peek(0))) {
+                    runtime_error("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                object_string_t *name;
+                if (instruction == OP_GET_PROPERTY)
+                    name = READ_STRING();
+                else
+                    name = READ_STRING_LONG();
+
+                object_instance_t *instance = AS_INSTANCE(peek(0));
+                value_t value;
+                if (table_get_value(&instance->fields, name, &value)) {
+                    pop();
+                    push(value);
+                    break;
+                }
+                runtime_error("Undefined property '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            case OP_SET_PROPERTY:
+            case OP_SET_PROPERTY_LONG: {
+                if (!IS_INSTANCE(peek(1))) {
+                    runtime_error("Only instances have properties.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+
+                object_string_t *name;
+                if (instruction == OP_SET_PROPERTY)
+                    name = READ_STRING();
+                else
+                    name = READ_STRING_LONG();
+
+                object_instance_t *instance = AS_INSTANCE(peek(1));
+                table_set_value(&instance->fields, name, peek(0));
+
+                value_t value = pop();
+                pop(); // pop instance
+                push(value);
                 break;
             }
             case OP_GET_UPVALUE: {

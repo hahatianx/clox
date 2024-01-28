@@ -26,7 +26,9 @@ add_executable(clox ${MAIN} ${C_SRC} ${C_INC}
         src/component/graystack.c
         include/component/graystack.h
         include/switch.h
-        src/switch.c)
+        src/switch.c
+        include/value/object/class.h
+        src/value/object/class.c)
 add_executable(test_clox ${TEST_MAIN} ${C_SRC}
         src/value/native/clock.c
         include/vm/runtime.h)

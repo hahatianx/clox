@@ -3,6 +3,8 @@
 #include "common.h"
 #include "basic/memory.h"
 #include "vm/runtime.h"
+#include "value/object/class.h"
+#include "component/valuetable.h"
 
 list_t temporary_objs;
 
@@ -15,6 +17,11 @@ static int print_function(object_function_t* func) {
 
 int print_object(value_t value) {
     switch(OBJ_TYPE(value)) {
+        case OBJ_CLASS:
+            return printf("<class %s>", AS_CLASS(value)->name->chars);
+        case OBJ_INSTANCE: {
+            return printf("<instance %s>", AS_INSTANCE(value)->klass->name->chars);
+        }
         case OBJ_STRING:
             return printf("%s", AS_CSTRING(value));
         case OBJ_FUNCTION:
@@ -44,6 +51,17 @@ void blacken_object(object_t* object) {
     printf("\n");
 #endif
     switch (object->type) {
+        case OBJ_CLASS: {
+            object_class_t* klass = (object_class_t*)object;
+            mark_object((object_t*)klass->name);
+            break;
+        }
+        case OBJ_INSTANCE: {
+            object_instance_t* instance = (object_instance_t*)object;
+            mark_table_value(&instance->fields);
+            mark_object((object_t*)instance->klass);
+            break;
+        }
         case OBJ_CLOSURE: {
             object_closure_t *closure = (object_closure_t*)object;
             mark_object((object_t*)closure->function);
@@ -92,6 +110,16 @@ void free_object(object_t *obj) {
 #endif
 
     switch (obj->type) {
+        case OBJ_CLASS: {
+            FREE(object_class_t, obj);
+            break;
+        }
+        case OBJ_INSTANCE: {
+            object_instance_t *instance = (object_instance_t*)obj;
+            free_table_value(&instance->fields);
+            FREE(object_instance_t, obj);
+            break;
+        }
         case OBJ_FUNCTION: {
             object_function_t* function = (object_function_t*)obj;
             free_chunk(&function->chunk);

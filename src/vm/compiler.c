@@ -644,6 +644,28 @@ static void fun_declaration() {
     define_variable(global, false);
 }
 
+static void class_declaration() {
+    consume(TOKEN_IDENTIFIER, "Expect class name.");
+    uint16_t name_constant = identifier_constant(&parser.previous);
+
+    declare_variable();
+
+    if (name_constant <= __OP_CONSTANT_MAX_INDEX) {
+        emit_byte_2(OP_CLASS, name_constant & __UINT8_MASK);
+    } else {
+        emit_byte(OP_CLASS_LONG);
+        uint8_t hi = (name_constant >> 8) & __UINT8_MASK;
+        uint8_t lo = (name_constant     ) & __UINT8_MASK;
+        emit_byte_2(hi, lo);
+    }
+
+    define_variable(name_constant, false);
+
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+
+}
+
 /******************** DECLARATIONS ENDS *********************/
 
 static void begin_scope() {
@@ -696,7 +718,6 @@ static void statement() {
         return_statement();
     } else {
         expression_statement();
-        // __CLOX_ERROR("Unsupported statement.");
     }
 }
 
@@ -705,6 +726,8 @@ static void declaration() {
         fun_declaration();
     } else if (match(TOKEN_VAR)) {
         var_declaration();
+    } else if (match(TOKEN_CLASS)) {
+        class_declaration();
     } else {
         statement();
     }
@@ -839,6 +862,32 @@ static uint8_t argument_list() {
 void call(bool can_assign) {
     uint8_t arg_count = argument_list();
     emit_byte_2(OP_CALL, arg_count);
+}
+
+void dot(bool can_assign) {
+    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint16_t name = identifier_constant(&parser.previous);
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        if (name <= __OP_CONSTANT_MAX_INDEX) {
+            emit_byte_2(OP_SET_PROPERTY, name & __UINT8_MASK);
+        } else {
+            uint8_t hi = (name >> 8) & __UINT8_MASK;
+            uint8_t lo = (name     ) & __UINT8_MASK;
+            emit_byte(OP_SET_PROPERTY_LONG);
+            emit_byte_2(hi, lo);
+        }
+    } else {
+        if (name <= __OP_CONSTANT_MAX_INDEX) {
+            emit_byte_2(OP_GET_PROPERTY, name & __UINT8_MASK);
+        } else {
+            uint8_t hi = (name >> 8) & __UINT8_MASK;
+            uint8_t lo = (name     ) & __UINT8_MASK;
+            emit_byte(OP_GET_PROPERTY_LONG);
+            emit_byte_2(hi, lo);
+        }
+    }
 }
 
 object_function_t* compile(const char* source) {

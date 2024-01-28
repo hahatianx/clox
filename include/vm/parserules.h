@@ -16,6 +16,7 @@ void variable   (bool);
 void _and       (bool);
 void _or        (bool);
 void call       (bool);
+void dot        (bool);
 
 parse_rule_t rules[] = {
 
@@ -24,7 +25,7 @@ parse_rule_t rules[] = {
     [TOKEN_LEFT_BRACE]     = {NULL,     NULL,    PREC_NONE},
     [TOKEN_RIGHT_BRACE]    = {NULL,     NULL,    PREC_NONE},
     [TOKEN_COMMA]          = {NULL,     NULL,    PREC_NONE},
-    [TOKEN_DOT]            = {NULL,     NULL,    PREC_NONE},
+    [TOKEN_DOT]            = {NULL,     dot,     PREC_CALL},
     [TOKEN_MINUS]          = {unary,    binary,  PREC_TERM},
     [TOKEN_PLUS]           = {NULL,     binary,  PREC_TERM},
     [TOKEN_SEMICOLON]      = {NULL,     NULL,    PREC_NONE},

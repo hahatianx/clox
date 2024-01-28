@@ -50,10 +50,17 @@ typedef enum {
     OP_GET_LOCAL,
     OP_SET_UPVALUE,
     OP_GET_UPVALUE,
+    OP_GET_PROPERTY,
+    OP_GET_PROPERTY_LONG,
+    OP_SET_PROPERTY,
+    OP_SET_PROPERTY_LONG,
     OP_PRINT,            // internal print, 1 byte
     OP_PRINTLN,
     OP_POP,              // pop the stack
     OP_POPN,
+
+    OP_CLASS,
+    OP_CLASS_LONG,
 } op_code_t;
 
 typedef struct {
