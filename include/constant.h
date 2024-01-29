@@ -8,5 +8,6 @@
 
 #define UINT8_COUNT (UINT8_MAX + 1)
 #define OBJECT_MAX  256
+#define LIST_CAPACITY_MAX 10000000
 
 #endif

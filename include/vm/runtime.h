@@ -15,6 +15,7 @@
 #include "value/object/function.h"
 #include "value/object/string.h"
 #include "value/object/class.h"
+#include "value/object/list.h"
 
 #include "value/primitive/float.h"
 #include "value/primitive/integer.h"

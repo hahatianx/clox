@@ -7,6 +7,7 @@
 
 typedef enum {
     OBJ_STRING,
+    OBJ_LIST,
     OBJ_FUNCTION,
     OBJ_NATIVE,
     OBJ_CLASS,
@@ -22,6 +23,7 @@ typedef struct clox_object {
 } object_t;
 
 typedef enum {
+    VAL_NONE,  // VAL_NONE must be the first in the enum list
     VAL_BOOL,
     VAL_NIL,
     VAL_INT,
@@ -39,6 +41,7 @@ typedef struct {
     } as;
 } value_t;
 
+#define IS_NONE(value)     ((value).type == VAL_NONE)
 #define IS_INT(value)      ((value).type == VAL_INT)
 #define IS_BOOL(value)     ((value).type == VAL_BOOL)
 #define IS_NIL(value)      ((value).type == VAL_NIL)

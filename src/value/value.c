@@ -37,6 +37,8 @@ void free_value_array(value_array_t* array) {
 
 int print_value(value_t value) {
     switch(value.type) {
+        case VAL_NONE:
+            return printf("NONE");
         case VAL_BOOL:
             return printf(AS_BOOL(value) ? "true" : "false");
         case VAL_NIL:

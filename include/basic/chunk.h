@@ -54,11 +54,14 @@ typedef enum {
     OP_GET_PROPERTY_LONG,
     OP_SET_PROPERTY,
     OP_SET_PROPERTY_LONG,
+    OP_GET_ARRAY_INDEX,
+    OP_SET_ARRAY_INDEX,
     OP_PRINT,            // internal print, 1 byte
     OP_PRINTLN,
     OP_POP,              // pop the stack
     OP_POPN,
 
+    OP_ARRAY,
     OP_CLASS,
     OP_CLASS_LONG,
 } op_code_t;

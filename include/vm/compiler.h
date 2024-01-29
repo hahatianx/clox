@@ -54,6 +54,12 @@ typedef struct {
     int count;
     int capacity;
     int start;
+    uint8_t scope_depth;
+    bool loop_type;
+    /*
+     *  true  -> for   loop, scope depth = { [this] for { } }
+     *  false -> while loop, scope depth = while { [this] }
+     */
 } loop_data_t;
 
 typedef struct __compiler {
@@ -65,9 +71,9 @@ typedef struct __compiler {
     upvalue_t    upvalues[UINT8_COUNT];
     local_t      locals[UINT8_COUNT];
     loop_data_t  loops[UINT8_COUNT];
-    int local_count;
-    int loop_count;
-    int scope_depth;
+    uint8_t local_count;
+    uint8_t loop_count;
+    uint8_t scope_depth;
 } compiler_t;
 
 

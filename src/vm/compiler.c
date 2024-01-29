@@ -28,8 +28,17 @@ chunk_t* compiling_chunk;
 static void block();
 static void statement();
 static void var_declaration();
-static void begin_scope();
-static void end_scope();
+
+/*
+ * return the depth of current scope
+ */
+static int  begin_scope();
+static int  end_scope();
+static int  cur_scope();
+/*
+ * This function pops variables in scopes till 'to', but the scopes are still kept.
+ */
+static int  pop_scope_to(int to);
 
 static void error_at(token_t* token, const char* message) {
     if (parser.panic_mode) return;
@@ -311,7 +320,7 @@ static int resolve_upvalue(compiler_t* compiler, token_t* name) {
 }
 
 static void add_local(token_t name) {
-    if(current->local_count == UINT8_COUNT) {
+    if(current->local_count == UINT8_MAX) {
         __CLOX_COMPILER_PREVIOUS_ERROR("too many local variables in function.");
     }
     local_t* local = &current->locals[current->local_count++];
@@ -396,11 +405,13 @@ static void named_variable(token_t name, bool can_assign) {
 
 /********************                  **********************/
 
-static void begin_loop_scope(int start) {
+static void begin_loop_scope(int start, bool is_for) {
     int now = current->loop_count;
     current->loops[now].count = 0;
     current->loops[now].capacity = 2;
-    current->loops[now].offset = ALLOCATE(uint16_t, 2);
+    current->loops[now].scope_depth = cur_scope() & __UINT8_MASK;
+    current->loops[now].loop_type = is_for;
+    current->loops[now].offset = ALLOCATE(uint16_t, current->loops[now].capacity);
 
     current->loops[now].start = start;
 
@@ -470,24 +481,48 @@ static void if_statement() {
 }
 
 static void break_statement() {
-    current_loop_context();
+    loop_data_t *context = current_loop_context();
     if (parser.had_error) return;
     consume(TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+
+    /*
+     *  clean up local variable scopes
+     *********************************************************************************************************
+     ** for loop:   break should pop all scopes till the out-most for is popped { [this] for() { } } popped **
+     ** while loop: break should pop all scopes till reaching while.            while() { [this] } popped   **
+     *********************************************************************************************************
+    */
+
+    /*  at lease one scope is removed, it's fine like this */
+    pop_scope_to(context->scope_depth);
+
     int offset = emit_jump(OP_JUMP);
     insert_offset(offset);
 }
 
 static void continue_statement() {
-    current_loop_context();
+    loop_data_t *context = current_loop_context();
     if (parser.had_error) return;
     consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+
+    /*
+     *  clean up local variable scopes
+     *********************************************************************************************************
+     ** for loop:   break should pop all scopes till inner scope                { for() { [this] } } popped **
+     ** while loop: break should pop all scopes till reaching while.            while() { [this] } popped   **
+     *********************************************************************************************************
+    */
+    /*  at lease one scope is removed, it's fine like this */
+    // equivalent uint8_t target_depth = context->loop_type ? context->scope_depth + 1 : context->scope_depth;
+    pop_scope_to(context->scope_depth + context->loop_type);
+
     loop_data_t* cur = current_loop_context();
     emit_loop(cur->start);
 }
 
 static void while_statement() {
     int loop_start = current_chunk()->count;
-    begin_loop_scope(loop_start);
+    begin_loop_scope(loop_start, false);
 
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
     expression();
@@ -503,7 +538,13 @@ static void while_statement() {
      *    the closure behaves differently
      *    please refer to p494 DESIGN NOTE: CLOSING OVER THE LOOP VARIABLE
      */
-    statement();
+    if (check(TOKEN_LEFT_BRACE)) {
+        statement();
+    } else {
+        begin_scope();
+        statement();
+        end_scope();
+    }
 
     emit_loop(loop_start);
     patch_jump(end_loop);
@@ -549,7 +590,7 @@ static void for_statement() {
         patch_jump(stmt_start);
     }
 
-    begin_loop_scope(~inc_start ? inc_start : loop_start);
+    begin_loop_scope(~inc_start ? inc_start : loop_start, true);
 
     /*
      *      WARN: the behavior of variable scope is different
@@ -557,17 +598,25 @@ static void for_statement() {
      *      statement     itself shares the scope with the outer function scope
      *    the closure behaves differently
      *    please refer to p494 DESIGN NOTE: CLOSING OVER THE LOOP VARIABLE
+     *
+     *    In this design, we apply separate variable scope anyway
      */
-    statement();
+    if (check(TOKEN_LEFT_BRACE)) {
+        statement();
+    } else {
+        begin_scope();
+        statement();
+        end_scope();
+    }
     emit_loop(~inc_start ? inc_start : loop_start);
     if (~exit_loop) {
         patch_jump(exit_loop);
         emit_byte(OP_POP);
     }
-    patch_loop_jumps();
-
-    end_loop_scope();
     end_scope();
+
+    patch_loop_jumps();
+    end_loop_scope();
 }
 
 static void return_statement() {
@@ -703,18 +752,21 @@ static void class_declaration() {
 
 /******************** DECLARATIONS ENDS *********************/
 
-static void begin_scope() {
-    current->scope_depth++;
+static int begin_scope() {
+    if (current->scope_depth == __UINT8_MASK) {
+        __CLOX_ERROR("Too many scopes! The compiler can keep at most 255 scopes.");
+    }
+    return ++current->scope_depth;
 }
 
-static void pop_stack_values(uint8_t *count) {
+inline static void pop_stack_values(uint8_t *count) {
     if (*count == 1) emit_byte(OP_POP);
     else if (*count > 1) emit_byte_2(OP_POPN, *count);
     *count = 0;
 }
 
-static void end_scope() {
-    current->scope_depth--;
+static int end_scope() {
+    int scope = current->scope_depth--;
     uint8_t pop_count = 0;
     while (current->local_count > 0 &&
         current->locals[current->local_count - 1].depth > current->scope_depth) {
@@ -728,6 +780,27 @@ static void end_scope() {
         current->local_count--;
     }
     pop_stack_values(&pop_count);
+    return scope;
+}
+
+static int pop_scope_to(int to) {
+    uint8_t pop_count = 0;
+    for (int ptr = current->local_count - 1; ~ptr; --ptr) {
+        if (current->locals[ptr & __UINT8_MASK].depth >= to) {
+            if (current->locals[ptr & __UINT8_MASK].is_captured) {
+                pop_stack_values(&pop_count);
+                emit_byte(OP_CLOSURE_UPVALUE);
+            } else {
+                pop_count++;
+            }
+        }
+    }
+    pop_stack_values(&pop_count);
+    return to;
+}
+
+static int cur_scope() {
+    return current->scope_depth;
 }
 
 static void statement() {
@@ -926,6 +999,27 @@ void dot(bool can_assign) {
             emit_byte(OP_GET_PROPERTY_LONG);
             emit_byte_2(hi, lo);
         }
+    }
+}
+
+void list(bool can_assign) {
+    consume(TOKEN_INTEGER, "Expect an integer as the array length.");
+    number(can_assign);
+    consume(TOKEN_SEMICOLON, "Expect ';' between array length and initialization");
+    expression();
+    consume(TOKEN_RIGHT_SQUARE, "Expect ']' after '['.");
+    emit_byte(OP_ARRAY);
+}
+
+void _index(bool can_assign) {
+    expression();
+    consume(TOKEN_RIGHT_SQUARE, "Expect ']' after '['.");
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        emit_byte(OP_SET_ARRAY_INDEX);
+    } else {
+        emit_byte(OP_GET_ARRAY_INDEX);
     }
 }
 
