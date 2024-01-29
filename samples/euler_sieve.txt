@@ -1,0 +1,29 @@
+
+// Euler sieve for prime numbers
+// This is a break/continue bug sample code
+
+var prime = [ 1000000; 0];
+var is_prime = [ 1000000; true];
+
+fun calc_prime(n) {
+    for (var mut i = 2; i <= n; i = i + 1) {
+        if (is_prime[i] == true) {
+            prime[i] = 1;
+        }
+        for (var mut j = 0; j <= n; j = j + 1) {
+            if (prime[j] == 0) {
+                continue;
+            }
+            if (i * j > n)
+                break;
+            is_prime[i * j] = false;
+            if (j > i or i % j == 0)
+                break;
+        }
+    }
+}
+
+calc_prime(1000);
+for (var mut i = 0; i <= 1000; i = i + 1) if (prime[i] == 1) {
+    println i;
+}

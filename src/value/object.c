@@ -17,11 +17,29 @@ static int print_function(object_function_t* func) {
 
 int print_object(value_t value) {
     switch(OBJ_TYPE(value)) {
+        case OBJ_LIST: {
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+            int len = 0;
+            object_list_t* list = AS_LIST(value);
+            len += printf("[");
+            for (int i = 0; i < MIN(list->capacity, 10); i++) {
+                len += printf(" ");
+                if (IS_NONE(list->list[i]))
+                    len += print_value(list->initial);
+                else
+                    len += print_value(list->list[i]);
+                len += printf(", ");
+            }
+            if (list->capacity > 10)
+                len += printf("... ");
+            len += printf("]");
+            return len;
+#undef MIN
+        }
         case OBJ_CLASS:
             return printf("<class %s>", AS_CLASS(value)->name->chars);
-        case OBJ_INSTANCE: {
+        case OBJ_INSTANCE:
             return printf("<instance %s>", AS_INSTANCE(value)->klass->name->chars);
-        }
         case OBJ_STRING:
             return printf("%s", AS_CSTRING(value));
         case OBJ_FUNCTION:
@@ -51,6 +69,13 @@ void blacken_object(object_t* object) {
     printf("\n");
 #endif
     switch (object->type) {
+        case OBJ_LIST: {
+            object_list_t* list = (object_list_t*)object;
+            mark_value(list->initial);
+            for (int i = 0; i < list->capacity; i++)
+                mark_value(list->list[i]);
+            break;
+        }
         case OBJ_CLASS: {
             object_class_t* klass = (object_class_t*)object;
             mark_object((object_t*)klass->name);
@@ -110,6 +135,12 @@ void free_object(object_t *obj) {
 #endif
 
     switch (obj->type) {
+        case OBJ_LIST: {
+            object_list_t *list = (object_list_t*)obj;
+            FREE_ARRAY(value_t, list->list, list->capacity);
+            FREE(object_list_t, obj);
+            break;
+        }
         case OBJ_CLASS: {
             FREE(object_class_t, obj);
             break;

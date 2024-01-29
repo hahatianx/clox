@@ -210,6 +210,8 @@ token_t scan_token() {
         case '&': return make_token(TOKEN_AMPERSAND);
         case '|': return make_token(TOKEN_PIPE);
         case '^': return make_token(TOKEN_CAP);
+        case '[': return make_token(TOKEN_LEFT_SQUARE);
+        case ']': return make_token(TOKEN_RIGHT_SQUARE);
         case '/': 
             return make_token(
                 match('#') ? TOKEN_FLOOR_DIVIDE : TOKEN_SLASH);

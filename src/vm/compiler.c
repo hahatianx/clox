@@ -929,6 +929,27 @@ void dot(bool can_assign) {
     }
 }
 
+void list(bool can_assign) {
+    consume(TOKEN_INTEGER, "Expect an integer as the array length.");
+    number(can_assign);
+    consume(TOKEN_SEMICOLON, "Expect ';' between array length and initialization");
+    expression();
+    consume(TOKEN_RIGHT_SQUARE, "Expect ']' after '['.");
+    emit_byte(OP_ARRAY);
+}
+
+void _index(bool can_assign) {
+    expression();
+    consume(TOKEN_RIGHT_SQUARE, "Expect ']' after '['.");
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        emit_byte(OP_SET_ARRAY_INDEX);
+    } else {
+        emit_byte(OP_GET_ARRAY_INDEX);
+    }
+}
+
 object_function_t* compile(const char* source) {
     /*
      *  Collect garbage before compiling, and then

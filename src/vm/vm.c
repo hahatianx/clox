@@ -5,8 +5,10 @@
 
 #include "common.h"
 #include "constant.h"
+#include "switch.h"
 
 #include "component/vartable.h"
+#include "component/valuetable.h"
 #include "component/graystack.h"
 
 #include "vm/runtime.h"
@@ -553,6 +555,53 @@ static interpret_result_t run() {
                 value_t value = pop();
                 pop(); // pop instance
                 push(value);
+                break;
+            }
+            case OP_GET_ARRAY_INDEX: {
+                if (!IS_LIST(peek(1))) {
+                    runtime_error("Only arrays have indices.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!IS_INT(peek(0))) {
+                    runtime_error("Only integers can be array indices.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                value_t index = pop();
+                value_t array = pop();
+                value_t value;
+                int result = get_list_value(AS_LIST(array), AS_INT(index), &value);
+                if (result) {
+                    runtime_error("Array index out of bound.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(value);
+                break;
+            }
+            case OP_SET_ARRAY_INDEX: {
+                if (!IS_LIST(peek(2))) {
+                    runtime_error("Only arrays have indices.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                if (!IS_INT(peek(1))) {
+                    runtime_error("Only integers can be array indices.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                value_t value = pop();
+                value_t index = pop();
+                value_t array = pop();
+                int result = set_list_value(AS_LIST(array), AS_INT(index), value);
+                if (result) {
+                    runtime_error("Array index out of bound.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                push(value);
+                break;
+            }
+            case OP_ARRAY: {
+                value_t init = pop();
+                value_t length = pop();
+                object_list_t *list = new_list(AS_INT(length), init);
+                push(OBJECT_VAL(list));
                 break;
             }
             case OP_GET_UPVALUE: {
