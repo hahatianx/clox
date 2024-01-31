@@ -18,7 +18,7 @@
 //#define DEBUG_PRINT_FREED
 
 
-#define DEBUG_STRESS_GC
+//#define DEBUG_STRESS_GC
 //#define DEBUG_LOG_GC
 
 #define __offset(type, member) ((uint64_t)((char*)&((type*)NULL)->member))
