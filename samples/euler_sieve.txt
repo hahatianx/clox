@@ -1,6 +1,6 @@
 
 // Euler sieve for prime numbers
-// This is a break/continue bug sample code
+// This is a piece of sample code to test break/continue local vars
 
 var mut ptr = 0;
 var prime = [ 1000000; 0];
@@ -25,7 +25,9 @@ fun calc_prime(n) {
 
 var start = clock();
 calc_prime(100000);
-for (var mut i = 0; i < ptr; i = i + 1)
-    println(prime[i]);
+for (var mut i = 0; i < ptr; i = i + 1) {
+    print prime[i]; print ", ";
+}
+println "";
 print "time consumed: ";
 println clock() - start;
