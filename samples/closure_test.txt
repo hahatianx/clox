@@ -1,18 +1,18 @@
 
 // This is a piece of sample code to test break/continue on local closure values
 
-var closure_list = [ 3; nil ];
+var closure_list = [ 15; nil ];
 
-for (var mut i = 1; i <= 2; i = i + 1) {
-
+for (var mut i = 1; i <= 10; i = i + 1) {
     var j = i * 2;
-
-    closure_list[i] = lambda (x) => x + j;
-
+    fun f_t(x) {
+        return x + j;
+    }
+    closure_list[i] = f_t;
 }
 
 println "Start loop!";
-for (var mut i = 1; i <= 2; i = i + 1) {
+for (var mut i = 1; i <= 10; i = i + 1) {
     print "Expect lambda function ";
     print i;
     print ": i + ";

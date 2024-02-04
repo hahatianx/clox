@@ -28,7 +28,6 @@ object_closure_t* new_closure(object_function_t* function) {
     closure->function = function;
     closure->upvalues = upvalues;
     closure->upvalue_count = function->upvalue_count;
-    function->upvalue_count = 0;
     return closure;
 }
 

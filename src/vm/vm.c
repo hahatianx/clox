@@ -80,8 +80,8 @@ static void print_vm_structure() {
         printf("\n");
     } list_iterate_end();
     printf("----------------------------------\n\n\n");
-}
 #endif
+}
 #endif
 
 static void reset_stack() {
