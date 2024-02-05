@@ -1,0 +1,18 @@
+
+// class Nested {
+//
+//     method() {
+//         fun function() {
+//             println this;
+//         }
+//         function();
+//     }
+// }
+//
+// Nested().method();
+
+println this;
+fun notMethod() {
+    println this;
+}
+notMethod();

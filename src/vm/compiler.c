@@ -23,6 +23,7 @@
 
 parser_t parser;
 compiler_t* current = NULL;
+class_compiler_t *current_class = NULL;
 chunk_t* compiling_chunk;
 
 static void block();
@@ -183,8 +184,13 @@ static void init_compiler(compiler_t* compiler, function_type_t type) {
     local_t* local = &current->locals[current->local_count++];
     local->depth = 0;
     local->is_captured = false;
-    local->name.start = "";
-    local->name.length = 0;
+    if (type != TYPE_FUNCTION) {
+        local->name.start = "this";
+        local->name.length = 4;
+    } else {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 static uint16_t make_constant(value_t value) {
@@ -193,7 +199,11 @@ static uint16_t make_constant(value_t value) {
 }
 
 static void emit_return() {
-    emit_byte(OP_NIL);
+    if (current->type == TYPE_INITIALIZER) {
+        emit_byte_2(OP_GET_LOCAL, 0);
+    } else {
+        emit_byte(OP_NIL);
+    }
     emit_byte(OP_RETURN);
 }
 
@@ -626,6 +636,9 @@ static void return_statement() {
     if (match(TOKEN_SEMICOLON)) {
         emit_return();
     } else {
+        if (current->type == TYPE_INITIALIZER) {
+            __CLOX_COMPILER_PREVIOUS_ERROR("Can't return a value from an initializer.");
+        }
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emit_byte(OP_RETURN);
@@ -701,6 +714,27 @@ static void compile_lambda(function_type_t type) {
     }
 }
 
+static void method() {
+    consume(TOKEN_IDENTIFIER, "Expect method name.");
+    uint16_t constant = identifier_constant(&parser.previous);
+
+    function_type_t type = TYPE_METHOD;
+    if (parser.previous.length == 4 &&
+        !memcmp(parser.previous.start, "init", 4)) {
+        type = TYPE_INITIALIZER;
+    }
+    function(type);
+
+    if (constant <= __OP_CONSTANT_MAX_INDEX) {
+        emit_byte_2(OP_METHOD, constant & __UINT8_MASK);
+    } else {
+        emit_byte(OP_METHOD_LONG);
+        uint8_t hi = (constant >> 8) & __UINT8_MASK;
+        uint8_t lo = (constant     ) & __UINT8_MASK;
+        emit_byte_2(hi, lo);
+    }
+}
+
 static void var_declaration() {
     bool mutable = false;
     if (match(TOKEN_MUT)) {
@@ -730,6 +764,7 @@ static void fun_declaration() {
 
 static void class_declaration() {
     consume(TOKEN_IDENTIFIER, "Expect class name.");
+    token_t class_name = parser.previous;
     uint16_t name_constant = identifier_constant(&parser.previous);
 
     declare_variable();
@@ -745,9 +780,20 @@ static void class_declaration() {
 
     define_variable(name_constant, false);
 
-    consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
-    consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+    class_compiler_t class_compiler;
+    class_compiler.enclosing = current_class;
+    current_class = &class_compiler;
 
+    named_variable(class_name, false);
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
+        method();
+
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+    emit_byte(OP_POP);
+    current_class = current_class->enclosing;
 }
 
 /******************** DECLARATIONS ENDS *********************/
@@ -1021,6 +1067,14 @@ void _index(bool can_assign) {
     } else {
         emit_byte(OP_GET_ARRAY_INDEX);
     }
+}
+
+void _this(bool can_assign) {
+    if (current_class == NULL) {
+        __CLOX_COMPILER_PREVIOUS_ERROR("Can't use 'this' outside of a class.");
+        return;
+    }
+    variable(false);
 }
 
 object_function_t* compile(const char* source) {

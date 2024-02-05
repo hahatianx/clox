@@ -38,6 +38,7 @@ static void mark_roots() {
     } list_iterate_end();
 
     mark_compiler_roots();
+    mark_object((object_t*)vm.init_string);
     mark_table_var(&vm.globals);
 }
 static void trace_references() {

@@ -32,6 +32,7 @@ typedef struct {
     var_metadata_t local  [STACK_MAX];
     value_t* stack_top;
 
+    object_string_t *init_string;
     // the string table is a value table, but without values
     table_t strings;
     // the globals table is a var table

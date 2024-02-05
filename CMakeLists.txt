@@ -30,7 +30,9 @@ add_executable(clox ${MAIN} ${C_SRC} ${C_INC}
         include/value/object/class.h
         src/value/object/class.c
         include/value/object/list.h
-        src/value/object/list.c)
+        src/value/object/list.c
+        include/value/native/type.h
+        src/value/native/type.c)
 add_executable(test_clox ${TEST_MAIN} ${C_SRC}
         src/value/native/clock.c
         include/vm/runtime.h)

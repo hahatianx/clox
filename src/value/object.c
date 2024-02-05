@@ -38,6 +38,13 @@ int print_object(value_t value) {
         }
         case OBJ_CLASS:
             return printf("<class %s>", AS_CLASS(value)->name->chars);
+        case OBJ_BOUND_METHOD: {
+            int len = 0;
+            len += printf("<bound method ");
+            len += print_function(AS_BOUND_METHOD(value)->method->function);
+            len += printf(">");
+            return len;
+        }
         case OBJ_INSTANCE:
             return printf("<instance %s>", AS_INSTANCE(value)->klass->name->chars);
         case OBJ_STRING:
@@ -78,7 +85,14 @@ void blacken_object(object_t* object) {
         }
         case OBJ_CLASS: {
             object_class_t* klass = (object_class_t*)object;
+            mark_table_value(&klass->methods);
             mark_object((object_t*)klass->name);
+            break;
+        }
+        case OBJ_BOUND_METHOD: {
+            object_bound_method_t *bound = (object_bound_method_t*)object;
+            mark_value(bound->receiver);
+            mark_object((object_t*)bound->method);
             break;
         }
         case OBJ_INSTANCE: {
@@ -142,7 +156,14 @@ void free_object(object_t *obj) {
             break;
         }
         case OBJ_CLASS: {
+            object_class_t *klass = (object_class_t*)obj;
+            free_table_value(&klass->methods);
             FREE(object_class_t, obj);
+            break;
+        }
+        case OBJ_BOUND_METHOD: {
+//            object_bound_method_t *bound = (object_bound_method_t*)obj;
+            FREE(object_bound_method_t, obj);
             break;
         }
         case OBJ_INSTANCE: {

@@ -141,6 +141,7 @@ static void init_keyword_trie() {
     
     keyword_trie_insert(&keyword_trie, "and",      TOKEN_AND);
     keyword_trie_insert(&keyword_trie, "class",    TOKEN_CLASS);
+    keyword_trie_insert(&keyword_trie, "this",     TOKEN_THIS);
     keyword_trie_insert(&keyword_trie, "else",     TOKEN_ELSE);
     keyword_trie_insert(&keyword_trie, "if",       TOKEN_IF);
     keyword_trie_insert(&keyword_trie, "or",       TOKEN_OR);

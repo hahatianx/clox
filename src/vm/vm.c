@@ -181,9 +181,20 @@ static void close_upvalues(value_t* last) {
 static bool call_value(value_t callee, int arg_count) {
     if (IS_OBJECT(callee)) {
         switch (OBJ_TYPE(callee)) {
+            case OBJ_BOUND_METHOD: {
+                object_bound_method_t *bound = AS_BOUND_METHOD(callee);
+                vm.stack_top[-arg_count - 1] = bound->receiver;
+                return call(bound->method, arg_count);
+            }
             case OBJ_CLASS: {
                 object_class_t *klass = AS_CLASS(callee);
                 vm.stack_top[-arg_count - 1] = OBJECT_VAL(new_instance(klass));
+                value_t init;
+
+                if (table_get_value(&klass->methods, vm.init_string, &init)) {
+                    return call(AS_CLOSURE(init), arg_count);
+                }
+
                 return true;
             }
             case OBJ_CLOSURE:
@@ -209,6 +220,26 @@ static bool call_value(value_t callee, int arg_count) {
     }
     __CLOX_RUNTIME_ERROR("The object is not callable.");
     return false;
+}
+
+static void define_method(object_string_t *name) {
+    value_t method = peek(0);
+    object_class_t *klass = AS_CLASS(peek(1));
+    table_set_value(&klass->methods, name, method);
+    pop();
+}
+
+static bool bind_method(object_class_t *klass, object_string_t *name) {
+    value_t method;
+    if (!table_get_value(&klass->methods, name, &method)) {
+        runtime_error("Undefined property '%s'.", name->chars);
+        return false;
+    }
+
+    object_bound_method_t *bound = new_bound_method(peek(0), AS_CLOSURE(method));
+    pop();
+    push(OBJECT_VAL(bound));
+    return true;
 }
 
 static interpret_result_t run() {
@@ -513,6 +544,12 @@ static interpret_result_t run() {
                 push(OBJECT_VAL(new_class(READ_STRING_LONG())));
                 break;
             }
+            case OP_METHOD:
+                define_method(READ_STRING());
+                break;
+            case OP_METHOD_LONG:
+                define_method(READ_STRING_LONG());
+                break;
             case OP_GET_PROPERTY:
             case OP_GET_PROPERTY_LONG: {
                 if (!IS_INSTANCE(peek(0))) {
@@ -533,8 +570,10 @@ static interpret_result_t run() {
                     push(value);
                     break;
                 }
-                runtime_error("Undefined property '%s'.", name->chars);
-                return INTERPRET_RUNTIME_ERROR;
+
+                if (!bind_method(instance->klass, name))
+                    return INTERPRET_RUNTIME_ERROR;
+                break;
             }
             case OP_SET_PROPERTY:
             case OP_SET_PROPERTY_LONG: {
@@ -716,13 +755,18 @@ void init_vm() {
     init_table(&vm.strings);
     init_stack(&vm.gray_stack);
 
+    vm.init_string = NULL;
+    vm.init_string = copy_string("init", 4);
+
     define_native("clock", 0, clock_native);
+    define_native("type", 1, type_native);
 }
 
 void free_vm() {
     free_table(&vm.strings);
     free_table_var(&vm.globals);
     free_stack(&vm.gray_stack);
+    vm.init_string = NULL;
     free_objects();
 }
 

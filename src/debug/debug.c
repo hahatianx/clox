@@ -132,10 +132,14 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return byte_instruction("OP_SET_LOCAL", chunk, offset);
         case OP_CLASS:
             return constant_instruction("OP_CLASS", chunk, offset);
-        case OP_ARRAY:
-            return simple_instruction("OP_ARRAY", offset);
         case OP_CLASS_LONG:
             return constant_instruction_long("OP_CLASS_LONG", chunk, offset);
+        case OP_METHOD:
+            return constant_instruction("OP_METHOD", chunk, offset);
+        case OP_METHOD_LONG:
+            return constant_instruction_long("OP_METHOD_LONG", chunk, offset);
+        case OP_ARRAY:
+            return simple_instruction("OP_ARRAY", offset);
         case OP_GET_PROPERTY:
             return constant_instruction("OP_GET_PROPERTY", chunk, offset);
         case OP_GET_PROPERTY_LONG:

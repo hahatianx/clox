@@ -14,6 +14,7 @@ typedef enum {
     OBJ_INSTANCE,
     OBJ_CLOSURE,
     OBJ_UPVALUE,
+    OBJ_BOUND_METHOD,
 } object_type_t;
 
 typedef struct clox_object {

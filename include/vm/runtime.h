@@ -11,6 +11,7 @@
 #include "value/object.h"
 
 #include "value/native/clock.h"
+#include "value/native/type.h"
 
 #include "value/object/function.h"
 #include "value/object/string.h"

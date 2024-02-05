@@ -17,6 +17,8 @@ typedef struct struct_parser {
 
 typedef enum {
     TYPE_FUNCTION,
+    TYPE_METHOD,
+    TYPE_INITIALIZER,
     TYPE_SCRIPT,
 } function_type_t;
 
@@ -75,6 +77,10 @@ typedef struct __compiler {
     uint8_t loop_count;
     uint8_t scope_depth;
 } compiler_t;
+
+typedef struct __class_compiler {
+    struct __class_compiler* enclosing;
+} class_compiler_t;
 
 
 object_function_t* compile(const char* source);
