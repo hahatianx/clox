@@ -222,6 +222,34 @@ static bool call_value(value_t callee, int arg_count) {
     return false;
 }
 
+static bool invoke_from_class(object_class_t *klass, object_string_t *name, int arg_count) {
+    value_t method;
+    if(!table_get_value(&klass->methods, name, &method)) {
+        runtime_error("Undefined property '%s'.", name->chars);
+        return false;
+    }
+    return call(AS_CLOSURE(method), arg_count);
+}
+
+static bool invoke(object_string_t* name, int arg_count) {
+    value_t receiver = peek(arg_count);
+
+    if (!IS_INSTANCE(receiver)) {
+        runtime_error("Only instances have methods.");
+        return false;
+    }
+
+    object_instance_t *instance = AS_INSTANCE(receiver);
+
+    value_t value;
+    if (table_get_value(&instance->fields, name, &value)) {
+        vm.stack_top[-arg_count - 1] = value;
+        return call_value(value, arg_count);
+    }
+
+    return invoke_from_class(instance->klass, name, arg_count);
+}
+
 static void define_method(object_string_t *name) {
     value_t method = peek(0);
     object_class_t *klass = AS_CLASS(peek(1));
@@ -675,6 +703,20 @@ static interpret_result_t run() {
             case OP_CALL: {
                 int arg_count = READ_BYTE();
                 if (!call_value(peek(arg_count), arg_count)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);
+                break;
+            }
+            case OP_INVOKE:
+            case OP_INVOKE_LONG: {
+                object_string_t *method = NULL;
+                if (instruction == OP_INVOKE)
+                    method = READ_STRING();
+                else
+                    method = READ_STRING_LONG();
+                int arg_count = READ_BYTE();
+                if (!invoke(method, arg_count)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
                 CONTEXT_SWITCH(&vm.frames[vm.frame_count - 1]);

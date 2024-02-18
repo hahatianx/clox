@@ -45,6 +45,26 @@ static int jump_instruction(const char* name, int sign, chunk_t* chunk, int offs
     return offset + 3;
 }
 
+static int invoke_instruction(const char* name, chunk_t* chunk, int offset) {
+    uint8_t constant = chunk->code[offset + 1];
+    uint8_t arg_count = chunk->code[offset + 2];
+    printf("%-20s %4d '", name, constant);
+    print_value(chunk->constants.values[constant]);
+    printf("' (%d args)\n", arg_count);
+    return offset + 3;
+}
+
+static int invoke_instruction_long(const char* name, chunk_t* chunk, int offset) {
+    uint8_t constant_hi = chunk->code[offset + 1];
+    uint8_t constant_lo = chunk->code[offset + 2];
+    uint8_t arg_count = chunk->code[offset + 3];
+    uint16_t constant = (constant_hi << 8) | constant_lo;
+    printf("%-20s %4d '", name, constant);
+    print_value(chunk->constants.values[constant]);
+    printf("' (%d args)\n", arg_count);
+    return offset + 4;
+}
+
 void disassemble_chunk(chunk_t* chunk, const char* name) {
     printf("== %s ==\n", name);
     for (int offset = 0; offset < chunk->count;) {
@@ -138,6 +158,10 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return constant_instruction("OP_METHOD", chunk, offset);
         case OP_METHOD_LONG:
             return constant_instruction_long("OP_METHOD_LONG", chunk, offset);
+        case OP_INVOKE:
+            return invoke_instruction("OP_INVOKE", chunk, offset);
+        case OP_INVOKE_LONG:
+            return invoke_instruction_long("OP_INVOKE_LONG", chunk, offset);
         case OP_ARRAY:
             return simple_instruction("OP_ARRAY", offset);
         case OP_GET_PROPERTY:

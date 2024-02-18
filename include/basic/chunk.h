@@ -64,6 +64,8 @@ typedef enum {
 
     OP_ARRAY,
 
+    OP_INVOKE,
+    OP_INVOKE_LONG,
     OP_CLASS,
     OP_CLASS_LONG,
     OP_METHOD,

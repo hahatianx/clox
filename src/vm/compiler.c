@@ -1036,6 +1036,17 @@ void dot(bool can_assign) {
             emit_byte(OP_SET_PROPERTY_LONG);
             emit_byte_2(hi, lo);
         }
+    } else if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t arg_count = argument_list();
+        if (name <= __OP_CONSTANT_MAX_INDEX) {
+            emit_byte_2(OP_INVOKE, name & __UINT8_MASK);
+        } else {
+            uint8_t hi = (name >> 8) & __UINT8_MASK;
+            uint8_t lo = (name     ) & __UINT8_MASK;
+            emit_byte(OP_INVOKE_LONG);
+            emit_byte_2(hi, lo);
+        }
+        emit_byte(arg_count);
     } else {
         if (name <= __OP_CONSTANT_MAX_INDEX) {
             emit_byte_2(OP_GET_PROPERTY, name & __UINT8_MASK);

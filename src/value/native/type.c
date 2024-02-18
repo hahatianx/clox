@@ -6,6 +6,7 @@
 
 #include "value/object/string.h"
 #include "value/native/type.h"
+#include "value/object/class.h"
 
 
 value_t type_native(__attribute__((unused)) int argc, value_t* args) {
@@ -29,6 +30,8 @@ value_t type_native(__attribute__((unused)) int argc, value_t* args) {
             object_t *obj = input.as.obj;
             switch (obj->type) {
                 case OBJ_BOUND_METHOD:
+                    strcpy(buff, "method");
+                    break;
                 case OBJ_CLOSURE:
                 case OBJ_FUNCTION:
                     strcpy(buff, "function");

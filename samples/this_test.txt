@@ -1,18 +1,19 @@
 
-// class Nested {
-//
-//     method() {
-//         fun function() {
-//             println this;
-//         }
-//         function();
-//     }
-// }
-//
-// Nested().method();
+class Nested {
 
-println this;
-fun notMethod() {
-    println this;
+    init(n) {
+        this.name = n;
+    }
+
+    p() {
+        println this.name;
+    }
 }
-notMethod();
+
+var a = Nested("I am A");
+var b = Nested("I am B");
+
+b.p = a.p;
+println type(a.p);
+println type(type);
+b.p();
