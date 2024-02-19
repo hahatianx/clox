@@ -48,6 +48,8 @@ typedef enum {
     OP_DEFINE_MUT_LOCAL,
     OP_SET_LOCAL,
     OP_GET_LOCAL,
+    OP_GET_SUPER,
+    OP_GET_SUPER_LONG,
     OP_SET_UPVALUE,
     OP_GET_UPVALUE,
     OP_GET_PROPERTY,
@@ -64,6 +66,7 @@ typedef enum {
 
     OP_ARRAY,
 
+    OP_INHERIT,
     OP_INVOKE,
     OP_INVOKE_LONG,
     OP_CLASS,

@@ -120,6 +120,13 @@ static bool match(tokentype_t type) {
     return true;
 }
 
+static token_t synthetic_token(const char* text) {
+    token_t token;
+    token.start = text;
+    token.length = (int)strlen(text);
+    return token;
+}
+
 static chunk_t* current_chunk() {
     return &current->function->chunk;
 }
@@ -781,8 +788,26 @@ static void class_declaration() {
     define_variable(name_constant, false);
 
     class_compiler_t class_compiler;
+    class_compiler.has_superclass = false;
     class_compiler.enclosing = current_class;
     current_class = &class_compiler;
+
+    if (match(TOKEN_LESS)) {
+        consume(TOKEN_IDENTIFIER, "Expect superclass name.");
+        variable(false);
+
+        if (identifier_equal(&class_name, &parser.previous)) {
+            error("A class cannot inherit from itself.");
+        }
+
+        begin_scope();
+        add_local(synthetic_token("super"));
+        define_variable(0, false);
+
+        named_variable(class_name, false);
+        emit_byte(OP_INHERIT);
+        class_compiler.has_superclass = true;
+    }
 
     named_variable(class_name, false);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -793,6 +818,10 @@ static void class_declaration() {
 
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     emit_byte(OP_POP);
+
+    if (class_compiler.has_superclass) {
+        end_scope();
+    }
     current_class = current_class->enclosing;
 }
 
@@ -1000,6 +1029,29 @@ void string(bool can_assign) {
 
 void variable(bool can_assign) {
     named_variable(parser.previous, can_assign);
+}
+
+void _super(bool can_assign) {
+    if (current_class == NULL) {
+        error("Cannot use 'super' outside of a class.");
+    } else if (!current_class->has_superclass) {
+        error("Cannot use 'super' in a class with no superclass.");
+    }
+
+    consume(TOKEN_DOT, "Expect '.' after 'super'.");
+    consume(TOKEN_IDENTIFIER, "Expect super class method name.");
+    uint16_t name = identifier_constant(&parser.previous);
+
+    named_variable(synthetic_token("this"), false);
+    named_variable(synthetic_token("super"), false);
+    if (name <= __OP_CONSTANT_MAX_INDEX) {
+        emit_byte_2(OP_GET_SUPER, name & __UINT8_MASK);
+    } else {
+        uint8_t hi = (name >> 8) & __UINT8_MASK;
+        uint8_t lo = (name     ) & __UINT8_MASK;
+        emit_byte(OP_GET_SUPER_LONG);
+        emit_byte_2(hi, lo);
+    }
 }
 
 static uint8_t argument_list() {

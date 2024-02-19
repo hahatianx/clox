@@ -80,6 +80,7 @@ typedef struct __compiler {
 
 typedef struct __class_compiler {
     struct __class_compiler* enclosing;
+    bool has_superclass;
 } class_compiler_t;
 
 

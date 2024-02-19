@@ -572,12 +572,36 @@ static interpret_result_t run() {
                 push(OBJECT_VAL(new_class(READ_STRING_LONG())));
                 break;
             }
+            case OP_INHERIT: {
+                value_t superclass = peek(1);
+                object_class_t *subclass = AS_CLASS(peek(0));
+                if (!IS_CLASS(superclass)) {
+                    runtime_error("Superclass must be a class.");
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+                pop();
+                break;
+            }
             case OP_METHOD:
                 define_method(READ_STRING());
                 break;
             case OP_METHOD_LONG:
                 define_method(READ_STRING_LONG());
                 break;
+            case OP_GET_SUPER:
+            case OP_GET_SUPER_LONG: {
+                object_string_t *name = NULL;
+                if (instruction == OP_GET_SUPER)
+                    name = READ_STRING();
+                else
+                    name = READ_STRING_LONG();
+                object_class_t *superclass = AS_CLASS(pop());
+
+                if (!bind_method(superclass, name))
+                    return INTERPRET_RUNTIME_ERROR;
+                break;
+            }
             case OP_GET_PROPERTY:
             case OP_GET_PROPERTY_LONG: {
                 if (!IS_INSTANCE(peek(0))) {

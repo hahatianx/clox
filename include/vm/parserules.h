@@ -19,6 +19,7 @@ void call       (bool);
 void dot        (bool);
 void _index     (bool);
 void _this      (bool);
+void _super     (bool);
 void list       (bool);
 void lambda     (bool);
 
@@ -68,7 +69,7 @@ parse_rule_t rules[] = {
     [TOKEN_OR]             = {NULL,     _or,     PREC_OR},
     [TOKEN_PRINT]          = {NULL,     NULL,    PREC_NONE},
     [TOKEN_RETURN]         = {NULL,     NULL,    PREC_NONE},
-    [TOKEN_SUPER]          = {NULL,     NULL,    PREC_NONE},
+    [TOKEN_SUPER]          = {_super,   NULL,    PREC_NONE},
     [TOKEN_THIS]           = {_this,    NULL,    PREC_NONE},
     [TOKEN_TRUE]           = {literal,  NULL,    PREC_NONE},
     [TOKEN_VAR]            = {NULL,     NULL,    PREC_NONE},

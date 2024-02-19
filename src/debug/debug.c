@@ -200,6 +200,12 @@ int disassemble_instruction(chunk_t* chunk, int offset) {
             return byte_instruction("OP_CALL", chunk, offset);
         case OP_CLOSURE_UPVALUE:
             return simple_instruction("OP_CLOSURE_UPVALUE", offset);
+        case OP_INHERIT:
+            return simple_instruction("OP_INHERIT", offset);
+        case OP_GET_SUPER:
+            return constant_instruction("OP_GET_SUPER", chunk, offset);
+        case OP_GET_SUPER_LONG:
+            return constant_instruction("OP_GET_SUPER_LONG", chunk, offset);
         case OP_CLOSURE: {
             offset++;
 //            uint16_t constant = (chunk->code[offset] << 8) | chunk->code[offset + 1];
