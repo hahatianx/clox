@@ -1,0 +1,39 @@
+
+class CoffeeMaker {
+
+    bark() {
+        println "Bark";
+    }
+brew() {
+        println "I don't know what to brew";
+    }
+
+}
+
+class ACoffeeMaker < CoffeeMaker {
+
+    brew() {
+        println "I am A.";
+    }
+}
+
+class BCoffeeMaker < CoffeeMaker {
+    brew () {
+        super.brew();
+        println "I am B.";
+    }
+}
+
+class CCoffeeMaker < BCoffeeMaker {
+    p() {
+        super.bark();
+    }
+}
+
+var a = ACoffeeMaker();
+a.brew();
+var b = BCoffeeMaker();
+b.brew();
+var c = CCoffeeMaker();
+c.p();
+
